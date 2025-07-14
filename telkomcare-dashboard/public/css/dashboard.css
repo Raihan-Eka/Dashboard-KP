@@ -1,0 +1,123 @@
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+}
+
+#dashboardTable {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#dashboardTable th, #dashboardTable td {
+    border-bottom: 1px solid #374151;
+    white-space: nowrap;
+}
+
+#dashboardTable tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#dashboardTable tbody tr.city-row td:first-child {
+    border-left: 3px solid #ef4444;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    background-color: #1f2937;
+    color: white;
+    z-index: 40;
+    transition: width 0.3s;
+    overflow: hidden;
+}
+
+.sidebar:hover {
+    width: 150px;
+}
+
+.sidebar-menu {
+    padding-top: 90px;
+    margin-left: 10px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    color: #d1d5db;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.menu-item:hover {
+    background-color: #374151;
+}
+
+.menu-item i {
+    font-size: 18px;
+    margin-right: 10px;
+    text-align: center;
+    width: 30px;
+}
+
+.menu-text {
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.sidebar:hover .menu-text {
+    opacity: 1;
+}
+
+.main-wrapper {
+    margin-left: 60px;
+}
+
+.sidebar:hover ~ .main-wrapper {
+    margin-left: 150px;
+}
+
+header {
+    left: 60px;
+}
+
+.sidebar:hover ~ header {
+    left: 150px;
+}
+
+footer {
+    left: 60px;
+    width: calc(100% - 60px);
+}
+
+.sidebar:hover ~ footer {
+    left: 150px;
+    width: calc(100% - 150px);
+}
