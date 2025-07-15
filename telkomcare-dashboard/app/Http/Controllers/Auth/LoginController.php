@@ -30,11 +30,14 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        // 1. Validasi data yang dikirim dari form (diubah ke username)
+        // 1. Validasi data yang dikirim dari form
         $this->validateLogin($request);
 
-        // 2. Mencoba untuk mengautentikasi pengguna (menggunakan username)
-        if (Auth::attempt($this->credentials($request))) {
+        // 2. Mencoba untuk mengautentikasi pengguna
+        // Kita hanya butuh username dan password untuk autentikasi
+        $credentials = $request->only('username', 'password');
+        
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended('/home');
         }
@@ -62,23 +65,14 @@ class LoginController extends Controller
      */
     protected function validateLogin(Request $request)
     {
-        // Mengubah validasi dari 'email' menjadi 'username'
+        // Menambahkan validasi untuk checkbox 'agree'
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
+            'agree'    => 'required', // Aturan ini memastikan checkbox dicentang
+        ], [
+            'agree.required' => 'You must agree to the Term of Use to login.', // Pesan error kustom
         ]);
-    }
-
-    /**
-     * Menyiapkan kredensial untuk percobaan autentikasi.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    protected function credentials(Request $request)
-    {
-        // Mengubah pengambilan data dari 'email' menjadi 'username'
-        return $request->only('username', 'password');
     }
 
     /**
@@ -89,7 +83,6 @@ class LoginController extends Controller
      */
     protected function sendFailedLoginResponse(Request $request)
     {
-        // Mengubah field error dari 'email' menjadi 'username'
         throw ValidationException::withMessages([
             'username' => [trans('auth.failed')],
         ]);
