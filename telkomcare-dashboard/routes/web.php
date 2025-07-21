@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\MonitoringController; // <-- TAMBAHKAN INI
 
 // Rute untuk menampilkan form login (hanya untuk tamu)
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
@@ -25,6 +26,13 @@ Route::middleware('auth')->group(function () {
 
     // Rute Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    // ========== BLOK BARU UNTUK MONITORING ==========
+    // Rute untuk halaman Pemantauan Wifi
+    Route::get('/monitoring/wifi', [MonitoringController::class, 'pageWifi'])->name('monitoring.wifi');
+    // Rute untuk halaman Pemantauan HSI
+    Route::get('/monitoring/hsi', [MonitoringController::class, 'pageHsi'])->name('monitoring.hsi');
+    // ===============================================
 
     // Rute API
     Route::prefix('api')->group(function () {
