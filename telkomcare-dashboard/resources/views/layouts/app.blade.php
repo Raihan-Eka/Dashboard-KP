@@ -8,17 +8,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { background-color: #111827; color: #f9fafb; }
-        /* Style untuk menu aktif di sidebar */
+        body { background-color: #1f2937; color: #f9fafb; } /* Sedikit lebih terang dari #111827 */
         .sidebar-active {
             background-color: #374151; /* bg-gray-700 */
             color: #ffffff;
         }
     </style>
 </head>
-<body class="flex h-screen">
+<body class="flex h-screen overflow-hidden">
 
-    <aside class="group w-20 hover:w-64 bg-gray-800 text-white p-4 flex flex-col justify-between transition-all duration-300 ease-in-out">
+    <aside class="group w-20 hover:w-64 bg-gray-800 text-white p-4 flex flex-col justify-between transition-all duration-300 ease-in-out flex-shrink-0">
         <div>
             {{-- Logo TelkomCare --}}
             <a href="{{ route('home') }}" class="flex items-center mb-10">
@@ -41,23 +40,18 @@
                             <span class="ml-2 hidden group-hover:inline">Datin</span>
                         </a>
                     </li>
-
-                    {{-- ===== MENU BARU DITAMBAHKAN DI SINI ===== --}}
                     <li class="mb-2">
                         <a href="{{ route('monitoring.wifi') }}" class="flex items-center p-2 rounded hover:bg-gray-700 {{ request()->routeIs('monitoring.wifi') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-wifi fa-fw fa-lg w-8 text-center"></i>
                             <span class="ml-2 hidden group-hover:inline">TTR Wifi</span>
                         </a>
                     </li>
-            
                     <li class="mb-2">
                         <a href="{{ route('monitoring.hsi') }}" class="flex items-center p-2 rounded hover:bg-gray-700 {{ request()->routeIs('monitoring.hsi') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-network-wired fa-fw fa-lg w-8 text-center"></i>
                             <span class="ml-2 hidden group-hover:inline">TTR HSI</span>
                         </a>
                     </li>
-                    {{-- ========================================== --}}
-
                     @endauth
                 </ul>
             </nav>
@@ -84,11 +78,12 @@
         </div>
     </aside>
 
-    <main class="flex-1 p-6 overflow-y-auto">
-        @yield('content')
+    <main class="flex-1 overflow-y-auto overflow-x-hidden bg-gray-900">
+        <div class="p-6">
+            @yield('content')
+        </div>
     </main>
 
     @stack('scripts')
-
 </body>
 </html>

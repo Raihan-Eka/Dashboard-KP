@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@push('styles')
+{{-- Menambahkan style khusus untuk halaman ini --}}
+<style>
+    /*
+      Memaksa browser untuk merender UI bawaan 
+      seperti kalender date-picker dalam mode terang (putih).
+    */
+    input[type="date"] {
+        color-scheme: light;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -9,11 +22,11 @@
         <form method="GET" action="{{ route('monitoring.hsi') }}" class="flex flex-col sm:flex-row items-center gap-4">
             <div>
                 <label for="start_date" class="text-sm font-medium text-gray-300">Dari Tanggal:</label>
-                <input type="date" id="start_date" name="start_date" value="{{ $filters['start_date'] }}" class="mt-1 block w-full bg-gray-900 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
+                <input type="date" id="start_date" name="start_date" value="{{ $filters['start_date'] }}" class="mt-1 block w-full bg-gray-700 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
             </div>
             <div>
                 <label for="end_date" class="text-sm font-medium text-gray-300">Sampai Tanggal:</label>
-                <input type="date" id="end_date" name="end_date" value="{{ $filters['end_date'] }}" class="mt-1 block w-full bg-gray-900 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
+                <input type="date" id="end_date" name="end_date" value="{{ $filters['end_date'] }}" class="mt-1 block w-full bg-gray-700 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
             </div>
             <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mt-5 sm:mt-0">
                 SUBMIT

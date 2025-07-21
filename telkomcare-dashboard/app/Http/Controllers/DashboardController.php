@@ -76,12 +76,18 @@ class DashboardController extends Controller
                 'k1' => $this->getEmptyCategoryData(), 'k2' => $this->getEmptyCategoryData(), 'k3' => $this->getEmptyCategoryData(),
                 'cities_detail' => []
             ];
+            
+            // Variabel untuk menghitung jumlah kota yang valid di region ini
+            $validCityCount = 0;
 
             foreach ($region->cities as $city) {
                 // Lewati kota ini jika tidak cocok dengan filter kota yang aktif
                 if ($request->filled('city_id') && $city->id != $request->input('city_id')) {
                     continue;
                 }
+                
+                // Tambahkan counter kota yang valid
+                $validCityCount++;
 
                 $cityDetail = [
                     'id' => $city->id, 'name' => $city->name,
@@ -93,17 +99,32 @@ class DashboardController extends Controller
                 // Akumulasi data kota ke total regional
                 foreach (['k1', 'k2', 'k3'] as $cat) {
                     foreach($cityDetail[$cat] as $key => $value) {
+                        // Penjumlahan berlaku untuk semua key, termasuk target untuk sementara
                         $regionData[$cat][$key] += $value;
                     }
                 }
                 $regionData['cities_detail'][] = $cityDetail;
             }
+
+            // === PERBAIKAN LOGIKA DI SINI ===
+            // Hitung ulang nilai rata-rata untuk TARGET dan ACHIEVEMENT di level Regional
+            if ($validCityCount > 0) {
+                foreach (['k1', 'k2', 'k3'] as $cat) {
+                    // Hitung rata-rata TARGET, bukan jumlahnya
+                    $regionData[$cat]['target'] = $regionData[$cat]['target'] / $validCityCount;
+
+                    // Hitung ulang ACHIEVEMENT berdasarkan total regional
+                    $total = $regionData[$cat]['total'];
+                    $comply = $regionData[$cat]['comply'];
+                    $regionData[$cat]['achievement'] = ($total > 0) ? (($comply / $total) * 100) : 0;
+                }
+            }
+
             $results[] = $regionData;
         }
 
         return response()->json($results);
     }
-
     private function getEmptyCategoryData() {
         return ['sid' => 0, 'comply' => 0, 'not_comply' => 0, 'total' => 0, 'target' => 0, 'ttr_comply' => 0, 'achievement' => 0, 'ticket_count' => 0];
     }
