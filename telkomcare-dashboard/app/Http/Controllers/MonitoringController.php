@@ -50,26 +50,31 @@ class MonitoringController extends Controller
     /**
      * Menampilkan halaman pemantauan Resume TTR INDIBIZ (HSI).
      */
+    /**
+     * Menampilkan halaman pemantauan Resume TTR INDIBIZ (HSI).
+     */
     public function pageHsi(Request $request)
     {
-        // Ambil filter dari request, sama seperti di DashboardController Anda
+        // Ambil filter dari request. Defaultnya sekarang null (tidak ada filter).
         $filters = [
-            'start_date' => $request->input('start_date', now()->startOfMonth()->format('Y-m-d')),
-            'end_date' => $request->input('end_date', now()->endOfMonth()->format('Y-m-d')),
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
         ];
 
-        // GANTI DENGAN LOGIKA DATABASE ANDA YANG SEBENARNYA
-        // Ini adalah contoh query dinamis berdasarkan filter tanggal.
-        $queryHsi = HsiTicket::query()
-            ->whereBetween('ticket_date', [$filters['start_date'], $filters['end_date']]);
+        // Mulai query dasar tanpa filter tanggal
+        $queryHsi = HsiTicket::query();
 
+        // HANYA terapkan filter tanggal JIKA kedua tanggal diisi oleh pengguna
+        if ($filters['start_date'] && $filters['end_date']) {
+            $queryHsi->whereBetween('ticket_date', [$filters['start_date'], $filters['end_date']]);
+        }
+
+        // Lanjutan query untuk select dan group by tidak berubah
         $dataHsi = $queryHsi->select(
-                'treg', // Asumsi nama kolom adalah 'treg'
-                // Logika untuk 4H
+                'treg',
                 DB::raw('SUM(CASE WHEN category = "4H" AND status = "Comply" THEN 1 ELSE 0 END) as h4_comply'),
                 DB::raw('SUM(CASE WHEN category = "4H" AND status = "Not Comply" THEN 1 ELSE 0 END) as h4_not_comply'),
                 DB::raw('AVG(CASE WHEN category = "4H" THEN target_percentage ELSE NULL END) as h4_target'),
-                // Logika untuk 24H
                 DB::raw('SUM(CASE WHEN category = "24H" AND status = "Comply" THEN 1 ELSE 0 END) as h24_comply'),
                 DB::raw('SUM(CASE WHEN category = "24H" AND status = "Not Comply" THEN 1 ELSE 0 END) as h24_not_comply'),
                 DB::raw('AVG(CASE WHEN category = "24H" THEN target_percentage ELSE NULL END) as h24_target'),
@@ -79,7 +84,6 @@ class MonitoringController extends Controller
             ->orderBy('treg')
             ->get()
             ->map(function ($item) {
-                // Proses kalkulasi akhir untuk setiap baris
                 $h4_total = $item->h4_comply + $item->h4_not_comply;
                 $item->h4_real = ($h4_total > 0) ? ($item->h4_comply / $h4_total) * 100 : 0;
                 $item->h4_ach = ($item->h4_target > 0) ? ($item->h4_real / $item->h4_target) * 100 : 0;
