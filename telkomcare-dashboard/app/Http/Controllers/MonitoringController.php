@@ -19,40 +19,131 @@ class MonitoringController extends Controller
     /**
      * Menampilkan halaman pemantauan TTR Compliance Wifi.
      */
-    public function pageWifi(Request $request)
+ public function pageWifi(Request $request)
     {
-        // GANTI DENGAN LOGIKA DATABASE ANDA YANG SEBENARNYA
-        // Ini adalah contoh query untuk mengambil dan mengagregasi data Wifi
-        // Sesuaikan nama model, kolom, dan logika sesuai kebutuhan.
-        $dataWifi = WifiTicket::select(
-                'regional',
-                DB::raw('AVG(target_percentage) as target'), // Asumsi target adalah rata-rata
-                DB::raw('SUM(CASE WHEN status = "Comply" THEN 1 ELSE 0 END) as comply'),
-                DB::raw('SUM(CASE WHEN status = "Not Comply" THEN 1 ELSE 0 END) as not_comply'),
-                DB::raw('COUNT(id) as total')
+        // 1. Ambil filter tanggal dari request. Defaultnya null.
+        $filters = [
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
+        ];
+
+        // 2. Query data mentah dari wifi_tickets_raw
+        $query = DB::table('wifi_tickets_raw');
+
+        // 3. Terapkan filter tanggal HANYA JIKA ADA
+        if ($filters['start_date'] && $filters['end_date']) {
+            // Asumsi kolom tanggal di tabel mentah bernama 'Reported_Date'
+            $query->whereBetween('Reported_Date', [$filters['start_date'], $filters['end_date']]);
+        }
+
+        // 4. Lakukan agregasi dan pengelompokan
+        $flatData = $query->select(
+                DB::raw("TRIM(Regional) as regional"),
+                DB::raw("TRIM(Witel) as witel"),
+                DB::raw("TRIM(Workzone) as workzone"),
+                DB::raw("SUM(IF(Compliance = 'COMPLY', 1, 0)) as comply"),
+                DB::raw("SUM(IF(Compliance = 'NOT COMPLY', 1, 0)) as not_comply")
             )
-            ->groupBy('regional')
-            ->orderBy('regional')
-            ->get()
-            ->map(function ($item) {
-                // Kalkulasi tambahan di level collection
-                $item->compliance = ($item->total > 0) ? ($item->comply / $item->total) * 100 : 0;
-                $item->achv = ($item->target > 0) ? ($item->compliance / $item->target) * 100 : 0;
-                return $item;
+            ->whereNotNull('Regional')
+            ->where('Regional', 'LIKE', 'REG-%')
+            ->groupBy('regional', 'witel', 'workzone')
+            ->get();
+
+        // 5. Proses data menjadi struktur bertingkat
+        $groupedByRegion = $flatData->groupBy('regional')->map(function ($regionItems, $regionName) {
+            
+            // Kelompokkan lagi data di dalam region berdasarkan witel
+            // TAMBAHKAN 'use ($regionName)' DI SINI
+            $witels = $regionItems->groupBy('witel')->map(function ($witelItems, $witelName) use ($regionName) {
+                
+                // Hitung total untuk witel ini
+                $witelComply = $witelItems->sum('comply');
+                $witelNotComply = $witelItems->sum('not_comply');
+                $witelTotal = $witelComply + $witelNotComply;
+                $witelTarget = ($regionName >= 'REG-6') ? 79.00 : 94.00; // Variabel $regionName sekarang bisa diakses
+                $witelCompliance = ($witelTotal > 0) ? ($witelComply / $witelTotal) * 100 : 0;
+                $witelAchv = ($witelTarget > 0) ? ($witelCompliance / $witelTarget) * 100 : 0;
+
+                // Format data workzone
+                $workzones = $witelItems->map(function ($item) use ($witelTarget) {
+                    $item->total = $item->comply + $item->not_comply;
+                    $item->target = $witelTarget;
+                    $item->compliance_percentage = ($item->total > 0) ? ($item->comply / $item->total) * 100 : 0;
+                    $item->achv_percentage = ($item->target > 0) ? ($item->compliance_percentage / $item->target) * 100 : 0;
+                    return $item;
+                });
+
+                return [ 'name' => $witelName, 'summary' => [ 'target' => $witelTarget, 'comply' => $witelComply, 'not_comply' => $witelNotComply, 'total' => $witelTotal, 'compliance_percentage' => $witelCompliance, 'achv_percentage' => $witelAchv, ], 'workzones' => $workzones->values()];
             });
-        
-        // Anda juga bisa menambahkan baris 'NASIONAL' secara manual setelah query
-        // dengan menjumlahkan semua hasil dari $dataWifi.
 
-        return view('monitoring.page_wifi', ['dataWifi' => $dataWifi]);
+            $regionComply = $regionItems->sum('comply');
+            $regionNotComply = $regionItems->sum('not_comply');
+            $regionTotal = $regionComply + $regionNotComply;
+            $regionTarget = ($regionName >= 'REG-6') ? 79.00 : 94.00;
+            $regionCompliance = ($regionTotal > 0) ? ($regionComply / $regionTotal) * 100 : 0;
+            $regionAchv = ($regionTarget > 0) ? ($regionCompliance / $regionTarget) * 100 : 0;
+
+            return [ 'name' => $regionName, 'summary' => [ 'target' => $regionTarget, 'comply' => $regionComply, 'not_comply' => $regionNotComply, 'total' => $regionTotal, 'compliance_percentage' => $regionCompliance, 'achv_percentage' => $regionAchv, ], 'witels' => $witels->values()];
+        });
+
+        $nasionalComply = $flatData->sum('comply');
+        $nasionalNotComply = $flatData->sum('not_comply');
+        $nasionalTotal = $nasionalComply + $nasionalNotComply;
+        $nasionalTarget = 89.00;
+        $nasionalCompliance = ($nasionalTotal > 0) ? ($nasionalComply / $nasionalTotal) * 100 : 0;
+        $nasionalAchv = ($nasionalTarget > 0) ? ($nasionalCompliance / $nasionalTarget) * 100 : 0;
+
+        $nasionalSummary = [ 'target' => $nasionalTarget, 'comply' => $nasionalComply, 'not_comply' => $nasionalNotComply, 'total' => $nasionalTotal, 'compliance_percentage' => $nasionalCompliance, 'achv_percentage' => $nasionalAchv, ];
+
+        return view('monitoring.page_wifi', [
+            'dataRegions' => $groupedByRegion->sortBy('name')->values(),
+            'dataNasional' => $nasionalSummary,
+            'filters' => $filters,
+        ]);
     }
+    /**
+     * Method baru untuk menangani download data mentah.
+     */
+    public function downloadWifiRawData(Request $request)
+    {
+        $filters = [
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
+        ];
 
-    /**
-     * Menampilkan halaman pemantauan Resume TTR INDIBIZ (HSI).
-     */
-    /**
-     * Menampilkan halaman pemantauan Resume TTR INDIBIZ (HSI).
-     */
+        $fileName = 'raw_wifi_data.csv';
+        
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        return response()->stream(function () use ($filters) {
+            $file = fopen('php://output', 'w');
+            
+            // Ambil nama kolom dari tabel secara dinamis
+            $columns = DB::getSchemaBuilder()->getColumnListing('wifi_tickets_raw');
+            fputcsv($file, $columns);
+            
+            $query = DB::table('wifi_tickets_raw');
+
+            if ($filters['start_date'] && $filters['end_date']) {
+                $query->whereBetween('Reported_Date', [$filters['start_date'], $filters['end_date']]);
+            }
+
+            // Ambil data per-bagian (chunk) agar tidak memberatkan memori
+            $query->chunk(500, function($data) use ($file) {
+                foreach ($data as $row) {
+                    fputcsv($file, (array) $row);
+                }
+            });
+
+            fclose($file);
+        }, 200, $headers);
+    }
     public function pageHsi(Request $request)
     {
         // Ambil filter dari request. Defaultnya sekarang null (tidak ada filter).

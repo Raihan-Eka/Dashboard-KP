@@ -1,125 +1,246 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    .cursor-pointer .fa-chevron-right { transition: transform 0.2s ease-in-out; }
+    .expanded .fa-chevron-right { transform: rotate(90deg); }
+    .table-cell { padding: 0.5rem; text-align: center; border: 1px solid #4a5568; white-space: nowrap; }
+    .text-left-indent { text-align: left; }
+    .header-group { padding: 0.5rem; text-align: center; border: 1px solid #4a5568; }
+    .header-main { font-size: 1.1rem; }
+    .k1-bg { background-color: rgba(74, 222, 128, 0.3); }
+    .k2-bg { background-color: rgba(59, 130, 246, 0.3); }
+    .k3-bg { background-color: rgba(244, 63, 94, 0.3); }
+    .sub-header-bg { background-color: rgba(255, 255, 255, 0.05); }
+</style>
+@endpush
+
 @section('content')
-    <div class="space-y-6">
-        <h1 class="text-2xl font-bold text-white">Dashboard Datin</h1>
-
-        {{-- Filter Section --}}
-        <div class="bg-gray-800 p-4 rounded-lg space-y-4 md:space-y-0 md:flex md:items-center md:space-x-4">
-            <div class="flex flex-wrap items-center gap-4 flex-grow">
-                <input type="date" id="startDate" class="bg-gray-700 text-white border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                <input type="date" id="endDate" class="bg-gray-700 text-white border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                <select id="regionFilter" class="bg-gray-700 text-white border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    <option value="">All Regions</option>
-                </select>
-                <select id="cityFilter" class="bg-gray-700 text-white border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    <option value="">All Cities</option>
-                </select>
-                <select id="categoryFilter" class="bg-gray-700 text-white border-gray-600 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    <option value="">All Categories</option>
-                    <option value="k1">K1</option>
-                    <option value="k2">K2</option>
-                    <option value="k3">K3</option>
-                </select>
-            </div>
-            <div class="flex items-center space-x-2 flex-shrink-0">
-                <button id="applyFilters" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Apply</button>
-                <button id="clearFilters" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">Clear</button>
-                <button id="addDataBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Add Data</button>
-            </div>
-        </div>
-
-        {{-- Table Section --}}
-        <div class="overflow-x-auto bg-gray-900 rounded-lg">
-            <table class="w-full text-xs text-gray-300 table-fixed">
-                <colgroup>
-                    {{-- Memberi lebar spesifik pada kolom pertama (Wilayah) --}}
-                    <col style="width: 14%;">
-                    {{-- Memberi lebar pada 21 kolom data --}}
-                    <col span="21" style="width: 3.5%;">
-                    {{-- Memberi lebar pada 2 kolom terakhir --}}
-                    <col span="2" style="width: 5%;">
-                </colgroup>
-                <thead class="bg-gray-800 text-xs text-gray-400 uppercase tracking-wider align-middle">
-                    <tr>
-                        <th rowspan="2" class="px-2 py-3 text-left">Wilayah</th>
-                        <th colspan="7" class="px-1 py-2 text-center border-l border-r border-gray-700">K1</th>
-                        <th colspan="7" class="px-1 py-2 text-center border-r border-gray-700">K2</th>
-                        <th colspan="7" class="px-1 py-2 text-center border-r border-gray-700">K3</th>
-                        {{-- Menambahkan break-words agar teks bisa turun --}}
-                        <th rowspan="2" class="px-1 py-2 text-center border-l border-gray-700 break-words">Avg AC</th>
-                        <th rowspan="2" class="px-1 py-2 text-center break-words">Total Tickets</th>
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-gray-800 p-4 rounded-lg shadow-lg overflow-x-auto">
+        <table class="min-w-full text-white text-xs">
+            <thead class="bg-gray-700 font-bold">
+                <tr>
+                    <th rowspan="2" class="header-group align-middle">REG</th>
+                    <th colspan="7" class="header-group header-main k1-bg">K1</th>
+                    <th colspan="7" class="header-group header-main k2-bg">K2</th>
+                    <th colspan="7" class="header-group header-main k3-bg">K3</th>
+                    <th rowspan="2" class="header-group align-middle" style="background-color: #6b21a8;">Rata2 Ach</th>
+                    <th rowspan="2" class="header-group align-middle" style="background-color: #1e3a8a;">TIKET</th>
+                </tr>
+                <tr class="sub-header-bg">
+                    {{-- K1 Sub-headers --}}
+                    <th class="header-group">SID</th>
+                    <th class="header-group">Comply</th>
+                    <th class="header-group">Not Comply</th>
+                    <th class="header-group">Total</th>
+                    <th class="header-group">Target K1</th>
+                    <th class="header-group">TTR Comply K1</th>
+                    <th class="header-group">Ach</th>
+                    {{-- K2 Sub-headers --}}
+                    <th class="header-group">SID</th>
+                    <th class="header-group">Comply</th>
+                    <th class="header-group">Not Comply</th>
+                    <th class="header-group">Total</th>
+                    <th class="header-group">Target K2</th>
+                    <th class="header-group">TTR Comply K2</th>
+                    <th class="header-group">Ach</th>
+                    {{-- K3 Sub-headers --}}
+                    <th class="header-group">SID</th>
+                    <th class="header-group">Comply</th>
+                    <th class="header-group">Not Comply</th>
+                    <th class="header-group">Total</th>
+                    <th class="header-group">Target K3</th>
+                    <th class="header-group">TTR Comply K3</th>
+                    <th class="header-group">Ach</th>
+                </tr>
+            </thead>
+            <tbody id="datin-table-body">
+                @forelse ($dataRegions as $region)
+                    {{-- BARIS REGIONAL --}}
+                    <tr class="font-bold bg-gray-700 @if(!$region['witels']->isEmpty()) cursor-pointer hover:bg-gray-600 expandable @endif" 
+                        data-id="region-{{ $loop->index }}" data-level="1">
+                        <td class="table-cell text-left-indent">
+                            @if(!$region['witels']->isEmpty())<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
+                            {{ $region['name'] }}
+                        </td>
+                        {{-- K1 Data --}}
+                        <td class="table-cell">{{ number_format($region['summary']['sid_k1']) }}</td>
+                        <td class="table-cell">{{ number_format($region['summary']['k1_comply']) }}</td>
+                        <td class="table-cell">{{ number_format($region['summary']['k1_not_comply']) }}</td>
+                        <td class="table-cell font-semibold">{{ number_format($region['summary']['k1_total']) }}</td>
+                        <td class="table-cell">{{ $region['summary']['k1_target'] }}</td>
+                        <td class="table-cell font-bold">{{ number_format($region['summary']['k1_ttr_comply'], 2) }}%</td>
+                        <td class="table-cell font-bold" style="color: {{ $region['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($region['summary']['k1_ach'], 2) }}%</td>
+                        {{-- K2 Data --}}
+                        <td class="table-cell">{{ number_format($region['summary']['sid_k2']) }}</td>
+                        <td class="table-cell">{{ number_format($region['summary']['k2_comply']) }}</td>
+                        <td class="table-cell">{{ number_format($region['summary']['k2_not_comply']) }}</td>
+                        <td class="table-cell font-semibold">{{ number_format($region['summary']['k2_total']) }}</td>
+                        <td class="table-cell">{{ $region['summary']['k2_target'] }}</td>
+                        <td class="table-cell font-bold">{{ number_format($region['summary']['k2_ttr_comply'], 2) }}%</td>
+                        <td class="table-cell font-bold" style="color: {{ $region['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($region['summary']['k2_ach'], 2) }}%</td>
+                        {{-- K3 Data --}}
+                        <td class="table-cell">{{ number_format($region['summary']['sid_k3']) }}</td>
+                        <td class="table-cell">{{ number_format($region['summary']['k3_comply']) }}</td>
+                        <td class="table-cell">{{ number_format($region['summary']['k3_not_comply']) }}</td>
+                        <td class="table-cell font-semibold">{{ number_format($region['summary']['k3_total']) }}</td>
+                        <td class="table-cell">{{ $region['summary']['k3_target'] }}</td>
+                        <td class="table-cell font-bold">{{ number_format($region['summary']['k3_ttr_comply'], 2) }}%</td>
+                        <td class="table-cell font-bold" style="color: {{ $region['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($region['summary']['k3_ach'], 2) }}%</td>
+                        {{-- Rata2 & Total --}}
+                        <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($region['summary']['rata2_ach'], 2) }}%</td>
+                        <td class="table-cell bg-gray-600 font-bold">{{ number_format($region['summary']['total_tickets']) }}</td>
                     </tr>
-                    <tr>
-                        {{-- Mempersingkat teks header dan mengatur padding --}}
-                        <th class="px-1 py-2 text-center border-l border-gray-700">SID</th><th class="px-1 py-2 text-center">Comply</th><th class="px-1 py-2 text-center">NC</th><th class="px-1 py-2 text-center">Total</th><th class="px-1 py-2 text-center">Target</th><th class="px-1 py-2 text-center">TTR</th><th class="px-1 py-2 text-center border-r border-gray-700">AC</th>
-                        <th class="px-1 py-2 text-center">SID</th><th class="px-1 py-2 text-center">Comply</th><th class="px-1 py-2 text-center">NC</th><th class="px-1 py-2 text-center">Total</th><th class="px-1 py-2 text-center">Target</th><th class="px-1 py-2 text-center">TTR</th><th class="px-1 py-2 text-center border-r border-gray-700">AC</th>
-                        <th class="px-1 py-2 text-center">SID</th><th class="px-1 py-2 text-center">Comply</th><th class="px-1 py-2 text-center">NC</th><th class="px-1 py-2 text-center">Total</th><th class="px-1 py-2 text-center">Target</th><th class="px-1 py-2 text-center">TTR</th><th class="px-1 py-2 text-center border-r border-gray-700">AC</th>
-                    </tr>
-                </thead>
-                <tbody id="dashboardTableBody" class="divide-y divide-gray-700">
-                    {{-- Data akan dimuat di sini oleh JavaScript --}}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- Modal "Add Data" -->
-    <div id="addDataModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-gray-800 p-8 rounded-lg w-full max-w-lg">
-            <h2 class="text-xl font-bold mb-6">Add New Data</h2>
-            <form id="addDataForm" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="modalEntryDate" class="block text-sm font-medium text-gray-300">Entry Date</label>
-                        <input type="date" id="modalEntryDate" name="entry_date" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white">
-                    </div>
-                    <div>
-                        <label for="modalCategory" class="block text-sm font-medium text-gray-300">Category</label>
-                        <select id="modalCategory" name="category" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white">
-                            <option value="K1">K1</option>
-                            <option value="K2">K2</option>
-                            <option value="K3">K3</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="modalRegion" class="block text-sm font-medium text-gray-300">Regional</label>
-                        <select id="modalRegion" name="region_id" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white">
-                            <option value="">Pilih Regional</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="modalCity" class="block text-sm font-medium text-gray-300">City</label>
-                        <select id="modalCity" name="city_id" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white">
-                            <option value="">Pilih Kota</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4">
-                    <div><label for="modalSid" class="block text-sm">SID</label><input type="number" id="modalSid" name="sid" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white"></div>
-                    <div><label for="modalComply" class="block text-sm">Comply</label><input type="number" id="modalComply" name="comply" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white"></div>
-                    <div><label for="modalNotComply" class="block text-sm">Not Comply</label><input type="number" id="modalNotComply" name="not_comply" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label for="modalTarget" class="block text-sm">Target (%)</label><input type="number" step="0.01" id="modalTarget" name="target" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white"></div>
-                    <div><label for="modalTtrComply" class="block text-sm">TTR Comply</label><input type="number" id="modalTtrComply" name="ttr_comply" class="mt-1 w-full bg-gray-700 rounded-md p-2 text-white"></div>
-                </div>
-                
-                <div id="modal-errors" class="text-red-500 text-sm pt-2"></div>
-                <div class="flex justify-end space-x-4 pt-4">
-                    <button type="button" id="closeModalBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">Cancel</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Save Data</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                    @foreach ($region['witels'] as $witel)
+                        {{-- BARIS WITEL --}}
+                        <tr class="hidden font-semibold bg-gray-700 bg-opacity-50 @if(!$witel['datels']->isEmpty()) cursor-pointer hover:bg-gray-600 expandable @endif" 
+                            data-parent="region-{{ $loop->parent->index }}" data-id="witel-{{ $loop->parent->index }}-{{ $loop->index }}" data-level="2">
+                            <td class="table-cell text-left-indent pl-10">
+                                @if(!$witel['datels']->isEmpty())<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
+                                {{ $witel['name'] }}
+                            </td>
+                            {{-- K1 Data --}}
+                            <td class="table-cell">{{ number_format($witel['summary']['sid_k1']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k1_comply']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k1_not_comply']) }}</td>
+                            <td class="table-cell font-semibold">{{ number_format($witel['summary']['k1_total']) }}</td>
+                            <td class="table-cell">{{ $witel['summary']['k1_target'] }}</td>
+                            <td class="table-cell font-bold">{{ number_format($witel['summary']['k1_ttr_comply'], 2) }}%</td>
+                            <td class="table-cell font-bold" style="color: {{ $witel['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k1_ach'], 2) }}%</td>
+                            {{-- K2 Data --}}
+                            <td class="table-cell">{{ number_format($witel['summary']['sid_k2']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k2_comply']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k2_not_comply']) }}</td>
+                            <td class="table-cell font-semibold">{{ number_format($witel['summary']['k2_total']) }}</td>
+                            <td class="table-cell">{{ $witel['summary']['k2_target'] }}</td>
+                            <td class="table-cell font-bold">{{ number_format($witel['summary']['k2_ttr_comply'], 2) }}%</td>
+                            <td class="table-cell font-bold" style="color: {{ $witel['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k2_ach'], 2) }}%</td>
+                            {{-- K3 Data --}}
+                            <td class="table-cell">{{ number_format($witel['summary']['sid_k3']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k3_comply']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k3_not_comply']) }}</td>
+                            <td class="table-cell font-semibold">{{ number_format($witel['summary']['k3_total']) }}</td>
+                            <td class="table-cell">{{ $witel['summary']['k3_target'] }}</td>
+                            <td class="table-cell font-bold">{{ number_format($witel['summary']['k3_ttr_comply'], 2) }}%</td>
+                            <td class="table-cell font-bold" style="color: {{ $witel['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k3_ach'], 2) }}%</td>
+                            {{-- Rata2 & Total --}}
+                            <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($witel['summary']['rata2_ach'], 2) }}%</td>
+                            <td class="table-cell bg-gray-600 font-bold">{{ number_format($witel['summary']['total_tickets']) }}</td>
+                        </tr>
+                        
+                        @foreach ($witel['datels'] as $datel)
+                            {{-- BARIS DATEL --}}
+                            <tr class="hidden font-medium bg-gray-800 @if(!$datel['stos']->isEmpty()) cursor-pointer hover:bg-gray-700 expandable @endif" 
+                                data-parent="witel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-id="datel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}-{{ $loop->index }}" data-level="3">
+                                <td class="table-cell text-left-indent pl-20">
+                                    @if(!$datel['stos']->isEmpty())<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
+                                    {{ $datel['name'] }}
+                                </td>
+                                {{-- K1 Data --}}
+                                <td class="table-cell">{{ number_format($datel['summary']['sid_k1']) }}</td>
+                                <td class="table-cell">{{ number_format($datel['summary']['k1_comply']) }}</td>
+                                <td class="table-cell">{{ number_format($datel['summary']['k1_not_comply']) }}</td>
+                                <td class="table-cell font-semibold">{{ number_format($datel['summary']['k1_total']) }}</td>
+                                <td class="table-cell">{{ $datel['summary']['k1_target'] }}</td>
+                                <td class="table-cell font-bold">{{ number_format($datel['summary']['k1_ttr_comply'], 2) }}%</td>
+                                <td class="table-cell font-bold" style="color: {{ $datel['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($datel['summary']['k1_ach'], 2) }}%</td>
+                                {{-- K2 Data --}}
+                                <td class="table-cell">{{ number_format($datel['summary']['sid_k2']) }}</td>
+                                <td class="table-cell">{{ number_format($datel['summary']['k2_comply']) }}</td>
+                                <td class="table-cell">{{ number_format($datel['summary']['k2_not_comply']) }}</td>
+                                <td class="table-cell font-semibold">{{ number_format($datel['summary']['k2_total']) }}</td>
+                                <td class="table-cell">{{ $datel['summary']['k2_target'] }}</td>
+                                <td class="table-cell font-bold">{{ number_format($datel['summary']['k2_ttr_comply'], 2) }}%</td>
+                                <td class="table-cell font-bold" style="color: {{ $datel['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($datel['summary']['k2_ach'], 2) }}%</td>
+                                {{-- K3 Data --}}
+                                <td class="table-cell">{{ number_format($datel['summary']['sid_k3']) }}</td>
+                                <td class="table-cell">{{ number_format($datel['summary']['k3_comply']) }}</td>
+                                <td class="table-cell">{{ number_format($datel['summary']['k3_not_comply']) }}</td>
+                                <td class="table-cell font-semibold">{{ number_format($datel['summary']['k3_total']) }}</td>
+                                <td class="table-cell">{{ $datel['summary']['k3_target'] }}</td>
+                                <td class="table-cell font-bold">{{ number_format($datel['summary']['k3_ttr_comply'], 2) }}%</td>
+                                <td class="table-cell font-bold" style="color: {{ $datel['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($datel['summary']['k3_ach'], 2) }}%</td>
+                                {{-- Rata2 & Total --}}
+                                <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($datel['summary']['rata2_ach'], 2) }}%</td>
+                                <td class="table-cell bg-gray-600 font-bold">{{ number_format($datel['summary']['total_tickets']) }}</td>
+                            </tr>
 
-    <div id="userMenuDropdown" class="hidden"></div>
-    <button id="userMenuButton" class="hidden"></button> 
+                            @foreach ($datel['stos'] as $sto)
+                                {{-- BARIS STO --}}
+                                <tr class="hidden" data-parent="datel-{{ $loop->parent->parent->parent->index }}-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-level="4">
+                                    <td class="table-cell text-left-indent pl-28">{{ $sto['name'] }}</td>
+                                    {{-- K1 Data --}}
+                                    <td class="table-cell">{{ number_format($sto['summary']['sid_k1']) }}</td>
+                                    <td class="table-cell">{{ number_format($sto['summary']['k1_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($sto['summary']['k1_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($sto['summary']['k1_total']) }}</td>
+                                    <td class="table-cell">{{ $sto['summary']['k1_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($sto['summary']['k1_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $sto['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($sto['summary']['k1_ach'], 2) }}%</td>
+                                    {{-- K2 Data --}}
+                                    <td class="table-cell">{{ number_format($sto['summary']['sid_k2']) }}</td>
+                                    <td class="table-cell">{{ number_format($sto['summary']['k2_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($sto['summary']['k2_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($sto['summary']['k2_total']) }}</td>
+                                    <td class="table-cell">{{ $sto['summary']['k2_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($sto['summary']['k2_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $sto['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($sto['summary']['k2_ach'], 2) }}%</td>
+                                    {{-- K3 Data --}}
+                                    <td class="table-cell">{{ number_format($sto['summary']['sid_k3']) }}</td>
+                                    <td class="table-cell">{{ number_format($sto['summary']['k3_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($sto['summary']['k3_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($sto['summary']['k3_total']) }}</td>
+                                    <td class="table-cell">{{ $sto['summary']['k3_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($sto['summary']['k3_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $sto['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($sto['summary']['k3_ach'], 2) }}%</td>
+                                    {{-- Rata2 & Total --}}
+                                    <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($sto['summary']['rata2_ach'], 2) }}%</td>
+                                    <td class="table-cell bg-gray-600 font-bold">{{ number_format($sto['summary']['total_tickets']) }}</td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+                    @endforeach
+                @empty
+                    <tr><td colspan="23" class="table-cell">Tidak ada data untuk ditampilkan.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/dashboard.js') }}"></script>
+{{-- Javascript expand/collapse tidak perlu diubah --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tableBody = document.getElementById('datin-table-body');
+    tableBody.addEventListener('click', function(event) {
+        const targetRow = event.target.closest('tr.expandable');
+        if (!targetRow) return;
+
+        const id = targetRow.dataset.id;
+        const children = tableBody.querySelectorAll(`tr[data-parent="${id}"]`);
+        targetRow.classList.toggle('expanded');
+        
+        const isHidden = !targetRow.classList.contains('expanded');
+
+        children.forEach(child => {
+            child.classList.toggle('hidden', isHidden);
+            if (isHidden && child.classList.contains('expandable')) {
+                child.classList.remove('expanded');
+                const childId = child.dataset.id;
+                const grandChildren = tableBody.querySelectorAll(`tr[data-parent^="${childId}"]`);
+                grandChildren.forEach(grandChild => {
+                    grandChild.classList.add('hidden');
+                    if(grandChild.classList.contains('expandable')) {
+                         grandChild.classList.remove('expanded');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
 @endpush

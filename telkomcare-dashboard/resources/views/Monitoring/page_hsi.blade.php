@@ -20,13 +20,13 @@
                 <label for="start_date" class="text-sm font-medium text-gray-300">Dari Tanggal:</label>
                 <input type="date" id="start_date" name="start_date"
                        value="{{ $filters['start_date'] ?? '' }}"
-                       class="mt-1 block w-full bg-gray-900 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
+                       class="mt-1 block w-full bg-gray-700 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
             </div>
             <div>
                 <label for="end_date" class="text-sm font-medium text-gray-300">Sampai Tanggal:</label>
                 <input type="date" id="end_date" name="end_date"
                        value="{{ $filters['end_date'] ?? '' }}"
-                       class="mt-1 block w-full bg-gray-900 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
+                       class="mt-1 block w-full bg-gray-700 border-gray-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-white p-2">
             </div>
             
             <div class="flex items-end gap-2 mt-5 sm:mt-0">
