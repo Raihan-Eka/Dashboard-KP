@@ -132,7 +132,7 @@
 
     <div class="login-container">
         <!-- Anda bisa ganti src dengan path logo Anda atau biarkan seperti ini -->
-        <img src="{{ asset('images/logo.svg') }}" alt="Logo Perusahaan Anda" class="logo">
+        <img src="{{ asset('images/EbisCare_logo.svg') }}" alt="Logo Perusahaan Anda" class="logo" style="width: 200px; height: auto; margin: 0 auto 20px;">
 
         <form method="POST" action="{{ route('login') }}" class="login-form">
             @csrf <!-- Token Keamanan Laravel -->
