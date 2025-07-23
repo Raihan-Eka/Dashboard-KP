@@ -5,46 +5,61 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PageController extends Controller
 {
     public function showHome(): View { return view('home'); }
 
-    public function showDatin()
+    public function showDatin(Request $request)
     {
+        // Mengambil tanggal dari input form, akan bernilai null jika tidak ada
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
         $targets = [ 'K1' => 100.0, 'K2' => 81.0, 'K3' => 95.0, ];
-        $summaryData = DB::table('datin_summary_complex')->get();
 
-        $regions = $summaryData->where('level', 1);
-        $witelsByReg = $summaryData->where('level', 2)->groupBy('reg');
-        $datelsByWitel = $summaryData->where('level', 3)->groupBy('witel');
-        $stosByDatel = $summaryData->where('level', 4)->groupBy('datel');
+        // 1. Ambil data mentah, filter berdasarkan tanggal jika ada
+        $query = DB::table('datin_raw_data');
 
-        $existingData = $regions->map(function ($region) use ($witelsByReg, $datelsByWitel, $stosByDatel, $targets) {
-            $witelsData = $witelsByReg->get($region->reg, collect())->map(function ($witel) use ($datelsByWitel, $stosByDatel, $targets) {
-                $datelsData = $datelsByWitel->get($witel->witel, collect())->map(function ($datel) use ($stosByDatel, $targets) {
-                    $stoData = $stosByDatel->get($datel->datel, collect())->map(function($sto) use ($targets){
-                        return [ 'name' => $sto->sto, 'summary' => $this->formatSummary($sto, $targets) ];
+        if ($startDate && $endDate) {
+            // Asumsi kolom tanggal adalah 'trouble_opentime'
+            $query->whereBetween('trouble_opentime', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        }
+
+        $flatData = $query->get();
+
+        // 2. Olah data mentah menjadi data summary (kalkulasi on-the-fly)
+        $regions = $flatData->groupBy('reg');
+        $existingData = $regions->map(function ($regionItems, $reg) use ($targets) {
+            $witels = $regionItems->groupBy('witel')->map(function ($witelItems, $witel) use ($targets) {
+                $datels = $witelItems->groupBy('datel')->map(function ($datelItems, $datel) use ($targets) {
+                    $stos = $datelItems->groupBy('sto')->map(function ($stoItems, $sto) use ($targets) {
+                        return [
+                            'name' => $sto,
+                            'summary' => $this->calculateSummary($stoItems, $targets)
+                        ];
                     });
                     return [
-                        'name' => $datel->datel,
-                        'summary' => $this->formatSummary($datel, $targets),
-                        'stos' => $stoData->sortBy('name')->values(),
+                        'name' => trim(str_replace('KANTOR DATEL ', '', $datel)),
+                        'summary' => $this->calculateSummary($datelItems, $targets),
+                        'stos' => $stos->sortBy('name')->values(),
                     ];
                 });
                 return [
-                    'name' => $witel->witel,
-                    'summary' => $this->formatSummary($witel, $targets),
-                    'datels' => $datelsData->sortBy('name')->values(),
+                    'name' => trim($witel),
+                    'summary' => $this->calculateSummary($witelItems, $targets),
+                    'datels' => $datels->sortBy('name')->values(),
                 ];
             });
             return [
-                'name' => $region->reg,
-                'summary' => $this->formatSummary($region, $targets),
-                'witels' => $witelsData->sortBy('name')->values(),
+                'name' => 'REG-' . $reg,
+                'summary' => $this->calculateSummary($regionItems, $targets),
+                'witels' => $witels->sortBy('name')->values(),
             ];
         });
 
+        // 3. Siapkan kerangka untuk semua regional agar yang kosong tetap tampil
         $allRegionNames = ['REG-1', 'REG-2', 'REG-3', 'REG-4', 'REG-5', 'REG-6', 'REG-7'];
         $emptySummary = [
             'sid_k1' => 0, 'k1_comply' => 0, 'k1_not_comply' => 0, 'k1_total' => 0, 'k1_target' => '100%', 'k1_ttr_comply' => 0, 'k1_ach' => 0,
@@ -59,21 +74,33 @@ class PageController extends Controller
             return [ 'name' => $regionName, 'summary' => $emptySummary, 'witels' => collect() ];
         });
 
-        return view('datin', ['dataRegions' => $finalData]);
+        // 4. Kirim semua variabel yang dibutuhkan ke view
+        return view('datin', [
+            'dataRegions' => $finalData,
+            'startDate' => $startDate, // Variabel ini yang menyebabkan error
+            'endDate' => $endDate,     // Variabel ini juga penting
+        ]);
     }
 
-    private function formatSummary($item, $targets) {
-        // Calculate Achievement percentages
-        $k1_ach_percent = ($targets['K1'] > 0) ? ($item->k1_ttr_comply / $targets['K1']) * 100 : 0;
-        $k2_ach_percent = ($targets['K2'] > 0) ? ($item->k2_ttr_comply / $targets['K2']) * 100 : 0;
-        $k3_ach_percent = ($targets['K3'] > 0) ? ($item->k3_ttr_comply / $targets['K3']) * 100 : 0;
+    private function calculateSummary($items, $targets) {
+        $summary = [];
+        foreach (['K1', 'K2', 'K3'] as $k) {
+            $kItems = $items->where('flag_k', $k);
+            $total = $kItems->count();
+            $comply = $kItems->where('is_ttr_customer_comply', 1)->count();
+            $ttrComply = ($total > 0) ? ($comply / $total) * 100 : 0;
+            $targetVal = $targets[$k];
+            $achPercent = ($targetVal > 0) ? ($ttrComply / $targetVal) * 100 : 0;
 
-        $summary = [
-            'sid_k1' => $item->sid_k1, 'k1_comply' => $item->k1_comply, 'k1_not_comply' => $item->k1_not_comply, 'k1_total' => $item->k1_total, 'k1_target' => $targets['K1'].'%', 'k1_ttr_comply' => $item->k1_ttr_comply, 'k1_ach' => $k1_ach_percent,
-            'sid_k2' => $item->sid_k2, 'k2_comply' => $item->k2_comply, 'k2_not_comply' => $item->k2_not_comply, 'k2_total' => $item->k2_total, 'k2_target' => $targets['K2'].'%', 'k2_ttr_comply' => $item->k2_ttr_comply, 'k2_ach' => $k2_ach_percent,
-            'sid_k3' => $item->sid_k3, 'k3_comply' => $item->k3_comply, 'k3_not_comply' => $item->k3_not_comply, 'k3_total' => $item->k3_total, 'k3_target' => $targets['K3'].'%', 'k3_ttr_comply' => $item->k3_ttr_comply, 'k3_ach' => $k3_ach_percent,
-            'total_tickets' => $item->total_tickets,
-        ];
+            $summary['sid_' . strtolower($k)] = $kItems->pluck('sid')->unique()->count();
+            $summary[strtolower($k) . '_comply'] = $comply;
+            $summary[strtolower($k) . '_not_comply'] = $total - $comply;
+            $summary[strtolower($k) . '_total'] = $total;
+            $summary[strtolower($k) . '_target'] = $targetVal . '%';
+            $summary[strtolower($k) . '_ttr_comply'] = $ttrComply;
+            $summary[strtolower($k) . '_ach'] = $achPercent;
+        }
+        $summary['total_tickets'] = $items->count();
         
         $ttrValues = [];
         if ($summary['k1_total'] > 0) $ttrValues[] = $summary['k1_ttr_comply'];
@@ -83,5 +110,44 @@ class PageController extends Controller
         $summary['rata2_ach'] = count($ttrValues) > 0 ? array_sum($ttrValues) / count($ttrValues) : 0;
 
         return $summary;
+    }
+
+    public function downloadDatinRaw(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $fileName = 'datin_raw_data';
+        if ($startDate && $endDate) {
+            $fileName .= "_from_{$startDate}_to_{$endDate}";
+        }
+        $fileName .= '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+        ];
+
+        $callback = function () use ($startDate, $endDate) {
+            $file = fopen('php://output', 'w');
+            
+            $columns = DB::getSchemaBuilder()->getColumnListing('datin_raw_data');
+            fputcsv($file, $columns);
+
+            $query = DB::table('datin_raw_data');
+            if ($startDate && $endDate) {
+                $query->whereBetween('trouble_opentime', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            }
+            
+            $query->orderBy('trouble_opentime')->chunk(1000, function ($data) use ($file) {
+                foreach ($data as $row) {
+                    fputcsv($file, (array)$row);
+                }
+            });
+
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 }

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\MonitoringController; // <-- Pastikan ini ada
+use App\Http\Controllers\MonitoringController;
 
 // Rute untuk menampilkan form login (hanya untuk tamu)
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
@@ -24,17 +24,15 @@ Route::middleware('auth')->group(function () {
     // Halaman Datin
     Route::get('/datin', [PageController::class, 'showDatin'])->name('datin');
 
+    // === TAMBAHKAN BARIS INI UNTUK MENGAKTIFKAN DOWNLOAD ===
+    Route::get('/datin/download', [PageController::class, 'downloadDatinRaw'])->name('datin.download');
+
     // Rute Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    // ========== BLOK BARU UNTUK MONITORING ==========
-    // Rute untuk halaman Pemantauan Wifi
+    // ========== BLOK UNTUK MONITORING ==========
     Route::get('/monitoring/wifi', [MonitoringController::class, 'pageWifi'])->name('monitoring.wifi');
-    
-    // Rute untuk download data Wifi
     Route::get('/monitoring/wifi/download', [MonitoringController::class, 'downloadWifiRawData'])->name('monitoring.wifi.download');
-
-    // Rute untuk halaman Pemantauan HSI
     Route::get('/monitoring/hsi', [MonitoringController::class, 'pageHsi'])->name('monitoring.hsi');
     // ===============================================
 
