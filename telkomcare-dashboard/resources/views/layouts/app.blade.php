@@ -22,9 +22,10 @@
         
         {{-- Bagian atas: Logo dan Menu --}}
         <div class="flex-grow">
-            <a href="{{ route('home') }}" class="flex items-center">
-                <img src="{{ asset('images/logo.svg') }}" alt="TelkomCare Logo" class="h-10 w-auto flex-shrink-0">
-            </a>
+                <a href="{{ route('home') }}" class="flex justify-center p-2 mb-4 border-b border-gray-700">
+                    <img src="{{ asset('images/EbisCare_logo_new.svg') }}" alt="TelkomCare Logo" 
+                         class="w-12 h-auto transition-all duration-300 ease-in-out group-hover:w-32">
+                </a>
             
             <nav class="mt-16">
                 <ul>
