@@ -92,7 +92,7 @@ class MonitoringController extends Controller
     /**
      * Menangani download data mentah Wifi ke CSV.
      */
-    public function downloadWifiRawData(Request $request)
+public function downloadWifiRawData(Request $request)
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -113,19 +113,19 @@ class MonitoringController extends Controller
 
         return response()->stream(function () use ($startDate, $endDate) {
             $file = fopen('php://output', 'w');
-            fwrite($file, "\xEF\xBB\BF"); 
+            fwrite($file, "\xEF\xBB\BF");
             $columns = DB::getSchemaBuilder()->getColumnListing('wifi_tickets_raw');
             fputcsv($file, $columns, ';');
-            
-            // 3. Ganti DB::table() dengan Model WifiTicket di fungsi download juga
+
             $query = WifiTicket::query();
 
             if ($startDate && $endDate) {
                 $query->whereBetween('Reported_Date', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             }
 
-            foreach ($query->orderBy('id')->cursor() as $row) {
-                fputcsv($file, (array) $row, ';');
+            // HAPUS ->orderBy('id') DARI SINI
+            foreach ($query->cursor() as $row) {
+                fputcsv($file, $row->toArray(), ';');
             }
 
             fclose($file);
@@ -174,7 +174,7 @@ class MonitoringController extends Controller
             });
 
 
-        return view('monitoring.page_hsi', [
+        return view('monitoring.hsi', [
             'dataHsi' => $dataHsi,
             'filters' => $filters
         ]);
