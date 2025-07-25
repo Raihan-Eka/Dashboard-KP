@@ -2,114 +2,101 @@
 
 namespace App\Http\Controllers;
 
-
-
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
-// Asumsikan Anda memiliki model untuk data tiket, jika belum ada, Anda perlu membuatnya.
-// Contoh: php artisan make:model WifiTicket
-// Contoh: php artisan make:model HsiTicket
-use App\Models\WifiTicket; 
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\WifiTicket; // <-- 1. Impor Model WifiTicket
 use App\Models\HsiTicket;
 
 class MonitoringController extends Controller
 {
     /**
-     * Menampilkan halaman pemantauan TTR Compliance Wifi.
+     * Menampilkan halaman TTR Wifi dengan data yang diolah.
      */
- public function pageWifi(Request $request)
+    public function pageWifi(Request $request)
     {
-        // 1. Ambil filter tanggal dari request. Defaultnya null.
         $filters = [
             'start_date' => $request->input('start_date'),
             'end_date' => $request->input('end_date'),
         ];
 
-        // 2. Query data mentah dari wifi_tickets_raw
-        $query = DB::table('wifi_tickets_raw');
+        // --- PERUBAHAN BARU: AMBIL TARGET DARI DATABASE ---
+        // 1. Ambil semua target dari tabel wifi_summary dan jadikan array
+        // Hasilnya akan seperti: ['REG 1' => 94.00, 'REG 6' => 79.00, 'NASIONAL' => 89.00]
+        $targets = DB::table('wifi_summary')->pluck('Target', 'Regional');
 
-        // 3. Terapkan filter tanggal HANYA JIKA ADA
+        $query = WifiTicket::query();
+        
         if ($filters['start_date'] && $filters['end_date']) {
-            // Asumsi kolom tanggal di tabel mentah bernama 'Reported_Date'
             $query->whereBetween('Reported_Date', [$filters['start_date'], $filters['end_date']]);
         }
 
-        // 4. Lakukan agregasi dan pengelompokan
-        $flatData = $query->select(
-                DB::raw("TRIM(Regional) as regional"),
-                DB::raw("TRIM(Witel) as witel"),
-                DB::raw("TRIM(Workzone) as workzone"),
-                DB::raw("SUM(IF(Compliance = 'COMPLY', 1, 0)) as comply"),
-                DB::raw("SUM(IF(Compliance = 'NOT COMPLY', 1, 0)) as not_comply")
-            )
-            ->whereNotNull('Regional')
-            ->where('Regional', 'LIKE', 'REG-%')
-            ->groupBy('regional', 'witel', 'workzone')
-            ->get();
+        $allData = $query->get();
 
-        // 5. Proses data menjadi struktur bertingkat
-        $groupedByRegion = $flatData->groupBy('regional')->map(function ($regionItems, $regionName) {
+        // 2. Ambil target Nasional dari array $targets, beri nilai default 89 jika tidak ada
+        $nasionalTarget = $targets->get('NASIONAL', 89.00);
+        $dataNasional = $this->calculateComplianceSummary($allData, $nasionalTarget);
+
+        // --- Logika di bawah ini sekarang menggunakan $targets dari database ---
+        $dataRegions = $allData->groupBy('Regional')->map(function($regionItems, $regionName) use ($targets) {
             
-            // Kelompokkan lagi data di dalam region berdasarkan witel
-            // TAMBAHKAN 'use ($regionName)' DI SINI
-            $witels = $regionItems->groupBy('witel')->map(function ($witelItems, $witelName) use ($regionName) {
+            // 3. Ambil target untuk region saat ini dari array, beri nilai default 89 jika tidak ada
+            $targetForThisRegion = $targets->get($regionName, 89.00);
+
+            $witels = $regionItems->groupBy('Witel')->map(function($witelItems, $witelName) use ($targetForThisRegion) {
                 
-                // Hitung total untuk witel ini
-                $witelComply = $witelItems->sum('comply');
-                $witelNotComply = $witelItems->sum('not_comply');
-                $witelTotal = $witelComply + $witelNotComply;
-                $witelTarget = ($regionName >= 'REG-6') ? 79.00 : 94.00; // Variabel $regionName sekarang bisa diakses
-                $witelCompliance = ($witelTotal > 0) ? ($witelComply / $witelTotal) * 100 : 0;
-                $witelAchv = ($witelTarget > 0) ? ($witelCompliance / $witelTarget) * 100 : 0;
+                $workzones = $witelItems->groupBy('Workzone')->map(function($workzoneItems, $workzoneName) use ($targetForThisRegion) {
+                    return [
+                        'workzone' => $workzoneName,
+                        'summary' => $this->calculateComplianceSummary($workzoneItems, $targetForThisRegion)
+                    ];
+                })->sortBy('workzone');
 
-                // Format data workzone
-                $workzones = $witelItems->map(function ($item) use ($witelTarget) {
-                    $item->total = $item->comply + $item->not_comply;
-                    $item->target = $witelTarget;
-                    $item->compliance_percentage = ($item->total > 0) ? ($item->comply / $item->total) * 100 : 0;
-                    $item->achv_percentage = ($item->target > 0) ? ($item->compliance_percentage / $item->target) * 100 : 0;
-                    return $item;
-                });
-
-                return [ 'name' => $witelName, 'summary' => [ 'target' => $witelTarget, 'comply' => $witelComply, 'not_comply' => $witelNotComply, 'total' => $witelTotal, 'compliance_percentage' => $witelCompliance, 'achv_percentage' => $witelAchv, ], 'workzones' => $workzones->values()];
+                return [
+                    'name' => $witelName,
+                    'summary' => $this->calculateComplianceSummary($witelItems, $targetForThisRegion),
+                    'workzones' => $workzones
+                ];
             });
 
-            $regionComply = $regionItems->sum('comply');
-            $regionNotComply = $regionItems->sum('not_comply');
-            $regionTotal = $regionComply + $regionNotComply;
-            $regionTarget = ($regionName >= 'REG-6') ? 79.00 : 94.00;
-            $regionCompliance = ($regionTotal > 0) ? ($regionComply / $regionTotal) * 100 : 0;
-            $regionAchv = ($regionTarget > 0) ? ($regionCompliance / $regionTarget) * 100 : 0;
+            return [
+                'name' => $regionName,
+                'summary' => $this->calculateComplianceSummary($regionItems, $targetForThisRegion),
+                'witels' => $witels->sortBy('name')
+            ];
+        })->sortBy('name');
 
-            return [ 'name' => $regionName, 'summary' => [ 'target' => $regionTarget, 'comply' => $regionComply, 'not_comply' => $regionNotComply, 'total' => $regionTotal, 'compliance_percentage' => $regionCompliance, 'achv_percentage' => $regionAchv, ], 'witels' => $witels->values()];
-        });
-
-        $nasionalComply = $flatData->sum('comply');
-        $nasionalNotComply = $flatData->sum('not_comply');
-        $nasionalTotal = $nasionalComply + $nasionalNotComply;
-        $nasionalTarget = 89.00;
-        $nasionalCompliance = ($nasionalTotal > 0) ? ($nasionalComply / $nasionalTotal) * 100 : 0;
-        $nasionalAchv = ($nasionalTarget > 0) ? ($nasionalCompliance / $nasionalTarget) * 100 : 0;
-
-        $nasionalSummary = [ 'target' => $nasionalTarget, 'comply' => $nasionalComply, 'not_comply' => $nasionalNotComply, 'total' => $nasionalTotal, 'compliance_percentage' => $nasionalCompliance, 'achv_percentage' => $nasionalAchv, ];
-
-        return view('monitoring.page_wifi', [
-            'dataRegions' => $groupedByRegion->sortBy('name')->values(),
-            'dataNasional' => $nasionalSummary,
-            'filters' => $filters,
-        ]);
+        return view('monitoring.wifi', compact('dataRegions', 'dataNasional', 'filters'));
     }
     /**
-     * Method baru untuk menangani download data mentah.
+     * Helper function untuk menghitung summary compliance.
      */
-   public function downloadWifiRawData(Request $request)
+    private function calculateComplianceSummary($collection, $target)
+    {
+        $comply = $collection->where('Compliance', 'COMPLY')->count();
+        $notComply = $collection->where('Compliance', 'NOT COMPLY')->count();
+        $total = $comply + $notComply;
+        $compliancePercentage = ($total > 0) ? ($comply / $total) * 100 : 0;
+        $achvPercentage = ($target > 0) ? ($compliancePercentage / $target) * 100 : 0;
+
+        return [
+            'target' => $target,
+            'comply' => $comply,
+            'not_comply' => $notComply,
+            'total' => $total,
+            'compliance_percentage' => $compliancePercentage,
+            'achv_percentage' => $achvPercentage,
+        ];
+    }
+
+    /**
+     * Menangani download data mentah Wifi ke CSV.
+     */
+    public function downloadWifiRawData(Request $request)
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        // Peningkatan: Nama file menjadi dinamis sesuai filter tanggal
         $fileName = 'raw_wifi_data';
         if ($startDate && $endDate) {
             $fileName .= "_from_{$startDate}_to_{$endDate}";
@@ -124,29 +111,20 @@ class MonitoringController extends Controller
             "Expires"             => "0"
         ];
 
-        // Menggunakan response()->stream() sudah benar dan efisien
         return response()->stream(function () use ($startDate, $endDate) {
             $file = fopen('php://output', 'w');
-
-            // Perbaikan: Menambahkan BOM (Byte Order Mark) untuk kompatibilitas Excel
-            fwrite($file, "\xEF\xBB\xBF");
-
-            // Ambil nama kolom dan tulis sebagai header
+            fwrite($file, "\xEF\xBB\BF"); 
             $columns = DB::getSchemaBuilder()->getColumnListing('wifi_tickets_raw');
-            // Perbaikan: Gunakan titik koma (;) sebagai pemisah
             fputcsv($file, $columns, ';');
             
-            $query = DB::table('wifi_tickets_raw');
+            // 3. Ganti DB::table() dengan Model WifiTicket di fungsi download juga
+            $query = WifiTicket::query();
 
             if ($startDate && $endDate) {
-                // Pastikan nama kolom 'Reported_Date' sudah benar
                 $query->whereBetween('Reported_Date', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             }
 
-            // Optimalisasi Performa: Menggunakan cursor()
-            // Ini jauh lebih efisien untuk data besar daripada chunk()
             foreach ($query->orderBy('id')->cursor() as $row) {
-                // Perbaikan: Gunakan juga titik koma (;) untuk setiap baris data
                 fputcsv($file, (array) $row, ';');
             }
 

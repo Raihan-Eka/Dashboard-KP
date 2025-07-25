@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\DatinRawData;
 
 class PageController extends Controller
 {
@@ -20,7 +21,7 @@ class PageController extends Controller
         $targets = [ 'K1' => 100.0, 'K2' => 81.0, 'K3' => 95.0, ];
 
         // 1. Ambil data mentah, filter berdasarkan tanggal jika ada
-        $query = DB::table('datin_raw_data');
+        $query = DatinRawData::query();
 
         if ($startDate && $endDate) {
             // Asumsi kolom tanggal adalah 'trouble_opentime'
@@ -139,7 +140,7 @@ class PageController extends Controller
             // 2. Gunakan titik koma (;) sebagai pemisah
             fputcsv($file, $columns, ';');
 
-            $query = DB::table('datin_raw_data');
+            $query = DatinRawData::query();
             if ($startDate && $endDate) {
                 $query->whereBetween('trouble_opentime', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             }

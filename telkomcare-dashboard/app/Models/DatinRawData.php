@@ -5,22 +5,19 @@ namespace App\Models;
 use illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class WifiTicket extends Model
+class DatinRawData extends Model
 {
     use HasFactory;
-
+    
     /**
+     * Nama tabel yang terhubung dengan model ini.
      * 
-     * Nama Tabel Yang Terhubung dengan model ini.
      * @var string
      */
-    protected $table = 'wifi_tickets_raw';
-
-    /**
-     * Menonaktifkan timestamps
-     * 
+    protected $tabel = 'datin_raw_data';
+    /** 
      * @var bool
-     */
+    */
     public $timestamps = false;
     //
 }

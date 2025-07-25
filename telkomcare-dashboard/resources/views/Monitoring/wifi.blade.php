@@ -80,13 +80,13 @@
                         </tr>
                         @foreach ($witel['workzones'] as $workzone)
                             <tr class="hidden child-witel-{{ $witel['name'] }}">
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left pl-20">{{ $workzone->workzone }}</td>
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone->target, 2) }} %</td>
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone->comply) }}</td>
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone->not_comply) }}</td>
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone->total) }}</td>
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone->compliance_percentage, 2) }} %</td>
-                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center font-bold {{ $workzone->achv_percentage >= 100 ? 'text-green-400' : 'text-red-400' }}">{{ number_format($workzone->achv_percentage, 2) }} %</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left pl-20">{{ $workzone['workzone'] }}</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone['summary']['target'], 2) }} %</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone['summary']['comply']) }}</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone['summary']['not_comply']) }}</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone['summary']['total']) }}</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center">{{ number_format($workzone['summary']['compliance_percentage'], 2) }} %</td>
+                                <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-center font-bold {{ $workzone['summary']['achv_percentage'] >= 100 ? 'text-green-400' : 'text-red-400' }}">{{ number_format($workzone['summary']['achv_percentage'], 2) }} %</td>
                             </tr>
                         @endforeach
                     @endforeach
