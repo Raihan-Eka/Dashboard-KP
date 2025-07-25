@@ -124,24 +124,31 @@ class PageController extends Controller
         $fileName .= '.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv',
+            'Content-Type'        => 'text/csv; charset=utf-8',
             'Content-Disposition' => "attachment; filename=\"$fileName\"",
         ];
 
         $callback = function () use ($startDate, $endDate) {
             $file = fopen('php://output', 'w');
             
+            // 1. Menambahkan BOM (Byte Order Mark) agar Excel mengenali encoding UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Ambil nama kolom dan tulis sebagai header
             $columns = DB::getSchemaBuilder()->getColumnListing('datin_raw_data');
-            fputcsv($file, $columns);
+            // 2. Gunakan titik koma (;) sebagai pemisah
+            fputcsv($file, $columns, ';');
 
             $query = DB::table('datin_raw_data');
             if ($startDate && $endDate) {
                 $query->whereBetween('trouble_opentime', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             }
             
+            // Proses data per-bagian agar hemat memori
             $query->orderBy('trouble_opentime')->chunk(1000, function ($data) use ($file) {
                 foreach ($data as $row) {
-                    fputcsv($file, (array)$row);
+                    // 3. Gunakan juga titik koma (;) untuk setiap baris data
+                    fputcsv($file, (array)$row, ';');
                 }
             });
 

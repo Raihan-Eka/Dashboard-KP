@@ -104,42 +104,51 @@ class MonitoringController extends Controller
     /**
      * Method baru untuk menangani download data mentah.
      */
-    public function downloadWifiRawData(Request $request)
+   public function downloadWifiRawData(Request $request)
     {
-        $filters = [
-            'start_date' => $request->input('start_date'),
-            'end_date' => $request->input('end_date'),
-        ];
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
-        $fileName = 'raw_wifi_data.csv';
-        
+        // Peningkatan: Nama file menjadi dinamis sesuai filter tanggal
+        $fileName = 'raw_wifi_data';
+        if ($startDate && $endDate) {
+            $fileName .= "_from_{$startDate}_to_{$endDate}";
+        }
+        $fileName .= '.csv';
+
         $headers = [
-            "Content-type"        => "text/csv",
+            "Content-type"        => "text/csv; charset=utf-8",
             "Content-Disposition" => "attachment; filename=$fileName",
             "Pragma"              => "no-cache",
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ];
 
-        return response()->stream(function () use ($filters) {
+        // Menggunakan response()->stream() sudah benar dan efisien
+        return response()->stream(function () use ($startDate, $endDate) {
             $file = fopen('php://output', 'w');
-            
-            // Ambil nama kolom dari tabel secara dinamis
+
+            // Perbaikan: Menambahkan BOM (Byte Order Mark) untuk kompatibilitas Excel
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Ambil nama kolom dan tulis sebagai header
             $columns = DB::getSchemaBuilder()->getColumnListing('wifi_tickets_raw');
-            fputcsv($file, $columns);
+            // Perbaikan: Gunakan titik koma (;) sebagai pemisah
+            fputcsv($file, $columns, ';');
             
             $query = DB::table('wifi_tickets_raw');
 
-            if ($filters['start_date'] && $filters['end_date']) {
-                $query->whereBetween('Reported_Date', [$filters['start_date'], $filters['end_date']]);
+            if ($startDate && $endDate) {
+                // Pastikan nama kolom 'Reported_Date' sudah benar
+                $query->whereBetween('Reported_Date', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             }
 
-            // Ambil data per-bagian (chunk) agar tidak memberatkan memori
-            $query->chunk(500, function($data) use ($file) {
-                foreach ($data as $row) {
-                    fputcsv($file, (array) $row);
-                }
-            });
+            // Optimalisasi Performa: Menggunakan cursor()
+            // Ini jauh lebih efisien untuk data besar daripada chunk()
+            foreach ($query->orderBy('id')->cursor() as $row) {
+                // Perbaikan: Gunakan juga titik koma (;) untuk setiap baris data
+                fputcsv($file, (array) $row, ';');
+            }
 
             fclose($file);
         }, 200, $headers);
