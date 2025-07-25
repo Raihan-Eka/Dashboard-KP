@@ -37,9 +37,5 @@ Route::middleware('auth')->group(function () {
     // ===============================================
 
     // Rute API
-    Route::prefix('api')->group(function () {
-        Route::get('/regions-cities', [DashboardController::class, 'getRegionsAndCities']);
-        Route::get('/dashboard-data', [DashboardController::class, 'getDashboardData']);
-        Route::post('/dashboard-data', [DashboardController::class, 'storeData']);
-    });
+
 });
