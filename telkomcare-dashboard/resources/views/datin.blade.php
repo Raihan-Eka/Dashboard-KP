@@ -29,8 +29,7 @@
                 <a href="{{ route('datin') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm">Clear</a>
             </form>
             
-            {{-- TOMBOL DOWNLOAD SEKARANG AKTIF --}}
-            <a href="{{ route('datin.download', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm flex items-center">
+            <a href="{{ route('datin.download', ['start_date' => $startDate ?? null, 'end_date' => $endDate ?? null]) }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm flex items-center">
                 <i class="fas fa-download mr-2"></i> Download
             </a>
         </div>
@@ -48,7 +47,6 @@
                     <th rowspan="2" class="header-group align-middle" style="background-color: #1e3a8a;">TIKET</th>
                 </tr>
                 <tr class="sub-header-bg">
-                    {{-- K1 Sub-headers --}}
                     <th class="header-group">SID</th>
                     <th class="header-group">Comply</th>
                     <th class="header-group">Not Comply</th>
@@ -56,7 +54,6 @@
                     <th class="header-group">Target K1</th>
                     <th class="header-group">TTR Comply K1</th>
                     <th class="header-group">Ach</th>
-                    {{-- K2 Sub-headers --}}
                     <th class="header-group">SID</th>
                     <th class="header-group">Comply</th>
                     <th class="header-group">Not Comply</th>
@@ -64,7 +61,6 @@
                     <th class="header-group">Target K2</th>
                     <th class="header-group">TTR Comply K2</th>
                     <th class="header-group">Ach</th>
-                    {{-- K3 Sub-headers --}}
                     <th class="header-group">SID</th>
                     <th class="header-group">Comply</th>
                     <th class="header-group">Not Comply</th>
@@ -75,7 +71,7 @@
                 </tr>
             </thead>
             <tbody id="datin-table-body">
-                 @forelse ($dataRegions as $region)
+                @forelse ($dataRegions as $region)
                     {{-- BARIS REGIONAL --}}
                     <tr class="font-bold bg-gray-700 @if(!$region['witels']->isEmpty()) cursor-pointer hover:bg-gray-600 expandable @endif" 
                         data-id="region-{{ $loop->index }}" data-level="1">
@@ -114,115 +110,151 @@
 
                     @foreach ($region['witels'] as $witel)
                         {{-- BARIS WITEL --}}
-                        <tr class="hidden font-semibold bg-gray-700 bg-opacity-50 @if(!$witel['datels']->isEmpty()) cursor-pointer hover:bg-gray-600 expandable @endif" 
+                        @php
+                            $isReg3 = ($region['name'] === 'REG-3');
+                            $hasChildren = $isReg3 ? !$witel['hsas']->isEmpty() : !$witel['workzones_direct']->isEmpty();
+                        @endphp
+                        <tr class="hidden font-semibold bg-gray-700 bg-opacity-50 @if($hasChildren) cursor-pointer hover:bg-gray-600 expandable @endif" 
                             data-parent="region-{{ $loop->parent->index }}" data-id="witel-{{ $loop->parent->index }}-{{ $loop->index }}" data-level="2">
                             <td class="table-cell text-left-indent pl-10">
-                                @if(!$witel['datels']->isEmpty())<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
+                                @if($hasChildren)<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
                                 {{ $witel['name'] }}
                             </td>
-                           {{-- K1 Data --}}
-                           <td class="table-cell">{{ number_format($witel['summary']['sid_k1']) }}</td>
-                           <td class="table-cell">{{ number_format($witel['summary']['k1_comply']) }}</td>
-                           <td class="table-cell">{{ number_format($witel['summary']['k1_not_comply']) }}</td>
-                           <td class="table-cell font-semibold">{{ number_format($witel['summary']['k1_total']) }}</td>
-                           <td class="table-cell">{{ $witel['summary']['k1_target'] }}</td>
-                           <td class="table-cell font-bold">{{ number_format($witel['summary']['k1_ttr_comply'], 2) }}%</td>
-                           <td class="table-cell font-bold" style="color: {{ $witel['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k1_ach'], 2) }}%</td>
-                           {{-- K2 Data --}}
-                           <td class="table-cell">{{ number_format($witel['summary']['sid_k2']) }}</td>
-                           <td class="table-cell">{{ number_format($witel['summary']['k2_comply']) }}</td>
-                           <td class="table-cell">{{ number_format($witel['summary']['k2_not_comply']) }}</td>
-                           <td class="table-cell font-semibold">{{ number_format($witel['summary']['k2_total']) }}</td>
-                           <td class="table-cell">{{ $witel['summary']['k2_target'] }}</td>
-                           <td class="table-cell font-bold">{{ number_format($witel['summary']['k2_ttr_comply'], 2) }}%</td>
-                           <td class="table-cell font-bold" style="color: {{ $witel['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k2_ach'], 2) }}%</td>
-                           {{-- K3 Data --}}
-                           <td class="table-cell">{{ number_format($witel['summary']['sid_k3']) }}</td>
-                           <td class="table-cell">{{ number_format($witel['summary']['k3_comply']) }}</td>
-                           <td class="table-cell">{{ number_format($witel['summary']['k3_not_comply']) }}</td>
-                           <td class="table-cell font-semibold">{{ number_format($witel['summary']['k3_total']) }}</td>
-                           <td class="table-cell">{{ $witel['summary']['k3_target'] }}</td>
-                           <td class="table-cell font-bold">{{ number_format($witel['summary']['k3_ttr_comply'], 2) }}%</td>
-                           <td class="table-cell font-bold" style="color: {{ $witel['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k3_ach'], 2) }}%</td>
-                           {{-- Rata2 & Total --}}
-                           <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($witel['summary']['rata2_ach'], 2) }}%</td>
-                           <td class="table-cell bg-gray-600 font-bold">{{ number_format($witel['summary']['total_tickets']) }}</td>
+                            {{-- K1 Data --}}
+                            <td class="table-cell">{{ number_format($witel['summary']['sid_k1']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k1_comply']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k1_not_comply']) }}</td>
+                            <td class="table-cell font-semibold">{{ number_format($witel['summary']['k1_total']) }}</td>
+                            <td class="table-cell">{{ $witel['summary']['k1_target'] }}</td>
+                            <td class="table-cell font-bold">{{ number_format($witel['summary']['k1_ttr_comply'], 2) }}%</td>
+                            <td class="table-cell font-bold" style="color: {{ $witel['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k1_ach'], 2) }}%</td>
+                            {{-- K2 Data --}}
+                            <td class="table-cell">{{ number_format($witel['summary']['sid_k2']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k2_comply']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k2_not_comply']) }}</td>
+                            <td class="table-cell font-semibold">{{ number_format($witel['summary']['k2_total']) }}</td>
+                            <td class="table-cell">{{ $witel['summary']['k2_target'] }}</td>
+                            <td class="table-cell font-bold">{{ number_format($witel['summary']['k2_ttr_comply'], 2) }}%</td>
+                            <td class="table-cell font-bold" style="color: {{ $witel['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k2_ach'], 2) }}%</td>
+                            {{-- K3 Data --}}
+                            <td class="table-cell">{{ number_format($witel['summary']['sid_k3']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k3_comply']) }}</td>
+                            <td class="table-cell">{{ number_format($witel['summary']['k3_not_comply']) }}</td>
+                            <td class="table-cell font-semibold">{{ number_format($witel['summary']['k3_total']) }}</td>
+                            <td class="table-cell">{{ $witel['summary']['k3_target'] }}</td>
+                            <td class="table-cell font-bold">{{ number_format($witel['summary']['k3_ttr_comply'], 2) }}%</td>
+                            <td class="table-cell font-bold" style="color: {{ $witel['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($witel['summary']['k3_ach'], 2) }}%</td>
+                            {{-- Rata2 & Total --}}
+                            <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($witel['summary']['rata2_ach'], 2) }}%</td>
+                            <td class="table-cell bg-gray-600 font-bold">{{ number_format($witel['summary']['total_tickets']) }}</td>
                         </tr>
                         
-                        @foreach ($witel['datels'] as $datel)
-                            {{-- BARIS DATEL --}}
-                            <tr class="hidden font-medium bg-gray-800 @if(!$datel['stos']->isEmpty()) cursor-pointer hover:bg-gray-700 expandable @endif" 
-                                data-parent="witel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-id="datel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}-{{ $loop->index }}" data-level="3">
-                                <td class="table-cell text-left-indent pl-20">
-                                    @if(!$datel['stos']->isEmpty())<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
-                                    {{ $datel['name'] }}
-                                </td>
-                                {{-- K1 Data --}}
-                                <td class="table-cell">{{ number_format($datel['summary']['sid_k1']) }}</td>
-                                <td class="table-cell">{{ number_format($datel['summary']['k1_comply']) }}</td>
-                                <td class="table-cell">{{ number_format($datel['summary']['k1_not_comply']) }}</td>
-                                <td class="table-cell font-semibold">{{ number_format($datel['summary']['k1_total']) }}</td>
-                                <td class="table-cell">{{ $datel['summary']['k1_target'] }}</td>
-                                <td class="table-cell font-bold">{{ number_format($datel['summary']['k1_ttr_comply'], 2) }}%</td>
-                                <td class="table-cell font-bold" style="color: {{ $datel['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($datel['summary']['k1_ach'], 2) }}%</td>
-                                {{-- K2 Data --}}
-                                <td class="table-cell">{{ number_format($datel['summary']['sid_k2']) }}</td>
-                                <td class="table-cell">{{ number_format($datel['summary']['k2_comply']) }}</td>
-                                <td class="table-cell">{{ number_format($datel['summary']['k2_not_comply']) }}</td>
-                                <td class="table-cell font-semibold">{{ number_format($datel['summary']['k2_total']) }}</td>
-                                <td class="table-cell">{{ $datel['summary']['k2_target'] }}</td>
-                                <td class="table-cell font-bold">{{ number_format($datel['summary']['k2_ttr_comply'], 2) }}%</td>
-                                <td class="table-cell font-bold" style="color: {{ $datel['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($datel['summary']['k2_ach'], 2) }}%</td>
-                                {{-- K3 Data --}}
-                                <td class="table-cell">{{ number_format($datel['summary']['sid_k3']) }}</td>
-                                <td class="table-cell">{{ number_format($datel['summary']['k3_comply']) }}</td>
-                                <td class="table-cell">{{ number_format($datel['summary']['k3_not_comply']) }}</td>
-                                <td class="table-cell font-semibold">{{ number_format($datel['summary']['k3_total']) }}</td>
-                                <td class="table-cell">{{ $datel['summary']['k3_target'] }}</td>
-                                <td class="table-cell font-bold">{{ number_format($datel['summary']['k3_ttr_comply'], 2) }}%</td>
-                                <td class="table-cell font-bold" style="color: {{ $datel['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($datel['summary']['k3_ach'], 2) }}%</td>
-                                {{-- Rata2 & Total --}}
-                                <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($datel['summary']['rata2_ach'], 2) }}%</td>
-                                <td class="table-cell bg-gray-600 font-bold">{{ number_format($datel['summary']['total_tickets']) }}</td>
-                            </tr>
-
-                            @foreach ($datel['stos'] as $sto)
-                                {{-- BARIS STO --}}
-                                <tr class="hidden" data-parent="datel-{{ $loop->parent->parent->parent->index }}-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-level="4">
-                                    <td class="table-cell text-left-indent pl-28">{{ $sto['name'] }}</td>
+                        @if ($isReg3)
+                            @foreach ($witel['hsas'] as $hsa)
+                                <tr class="hidden font-medium bg-gray-800 @if(!$hsa['workzones']->isEmpty()) cursor-pointer hover:bg-gray-700 expandable @endif" 
+                                    data-parent="witel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-id="hsa-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}-{{ $loop->index }}" data-level="3">
+                                    <td class="table-cell text-left-indent pl-20">
+                                        @if(!$hsa['workzones']->isEmpty())<i class="fas fa-chevron-right fa-fw mr-2"></i>@endif
+                                        {{ $hsa['name'] }}
+                                    </td>
                                     {{-- K1 Data --}}
-                                    <td class="table-cell">{{ number_format($sto['summary']['sid_k1']) }}</td>
-                                    <td class="table-cell">{{ number_format($sto['summary']['k1_comply']) }}</td>
-                                    <td class="table-cell">{{ number_format($sto['summary']['k1_not_comply']) }}</td>
-                                    <td class="table-cell font-semibold">{{ number_format($sto['summary']['k1_total']) }}</td>
-                                    <td class="table-cell">{{ $sto['summary']['k1_target'] }}</td>
-                                    <td class="table-cell font-bold">{{ number_format($sto['summary']['k1_ttr_comply'], 2) }}%</td>
-                                    <td class="table-cell font-bold" style="color: {{ $sto['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($sto['summary']['k1_ach'], 2) }}%</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['sid_k1']) }}</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['k1_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['k1_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($hsa['summary']['k1_total']) }}</td>
+                                    <td class="table-cell">{{ $hsa['summary']['k1_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($hsa['summary']['k1_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $hsa['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($hsa['summary']['k1_ach'], 2) }}%</td>
                                     {{-- K2 Data --}}
-                                    <td class="table-cell">{{ number_format($sto['summary']['sid_k2']) }}</td>
-                                    <td class="table-cell">{{ number_format($sto['summary']['k2_comply']) }}</td>
-                                    <td class="table-cell">{{ number_format($sto['summary']['k2_not_comply']) }}</td>
-                                    <td class="table-cell font-semibold">{{ number_format($sto['summary']['k2_total']) }}</td>
-                                    <td class="table-cell">{{ $sto['summary']['k2_target'] }}</td>
-                                    <td class="table-cell font-bold">{{ number_format($sto['summary']['k2_ttr_comply'], 2) }}%</td>
-                                    <td class="table-cell font-bold" style="color: {{ $sto['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($sto['summary']['k2_ach'], 2) }}%</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['sid_k2']) }}</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['k2_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['k2_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($hsa['summary']['k2_total']) }}</td>
+                                    <td class="table-cell">{{ $hsa['summary']['k2_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($hsa['summary']['k2_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $hsa['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($hsa['summary']['k2_ach'], 2) }}%</td>
                                     {{-- K3 Data --}}
-                                    <td class="table-cell">{{ number_format($sto['summary']['sid_k3']) }}</td>
-                                    <td class="table-cell">{{ number_format($sto['summary']['k3_comply']) }}</td>
-                                    <td class="table-cell">{{ number_format($sto['summary']['k3_not_comply']) }}</td>
-                                    <td class="table-cell font-semibold">{{ number_format($sto['summary']['k3_total']) }}</td>
-                                    <td class="table-cell">{{ $sto['summary']['k3_target'] }}</td>
-                                    <td class="table-cell font-bold">{{ number_format($sto['summary']['k3_ttr_comply'], 2) }}%</td>
-                                    <td class="table-cell font-bold" style="color: {{ $sto['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($sto['summary']['k3_ach'], 2) }}%</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['sid_k3']) }}</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['k3_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($hsa['summary']['k3_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($hsa['summary']['k3_total']) }}</td>
+                                    <td class="table-cell">{{ $hsa['summary']['k3_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($hsa['summary']['k3_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $hsa['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($hsa['summary']['k3_ach'], 2) }}%</td>
                                     {{-- Rata2 & Total --}}
-                                    <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($sto['summary']['rata2_ach'], 2) }}%</td>
-                                    <td class="table-cell bg-gray-600 font-bold">{{ number_format($sto['summary']['total_tickets']) }}</td>
+                                    <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($hsa['summary']['rata2_ach'], 2) }}%</td>
+                                    <td class="table-cell bg-gray-600 font-bold">{{ number_format($hsa['summary']['total_tickets']) }}</td>
+                                </tr>
+                                @foreach ($hsa['workzones'] as $workzone)
+                                    <tr class="hidden" data-parent="hsa-{{ $loop->parent->parent->parent->index }}-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-level="4">
+                                        <td class="table-cell text-left-indent pl-28">{{ $workzone['name'] }}</td>
+                                        {{-- K1 Data --}}
+                                        <td class="table-cell">{{ number_format($workzone['summary']['sid_k1']) }}</td>
+                                        <td class="table-cell">{{ number_format($workzone['summary']['k1_comply']) }}</td>
+                                        <td class="table-cell">{{ number_format($workzone['summary']['k1_not_comply']) }}</td>
+                                        <td class="table-cell font-semibold">{{ number_format($workzone['summary']['k1_total']) }}</td>
+                                        <td class="table-cell">{{ $workzone['summary']['k1_target'] }}</td>
+                                        <td class="table-cell font-bold">{{ number_format($workzone['summary']['k1_ttr_comply'], 2) }}%</td>
+                                        <td class="table-cell font-bold" style="color: {{ $workzone['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($workzone['summary']['k1_ach'], 2) }}%</td>
+                                        {{-- K2 Data --}}
+                                        <td class="table-cell">{{ number_format($workzone['summary']['sid_k2']) }}</td>
+                                        <td class="table-cell">{{ number_format($workzone['summary']['k2_comply']) }}</td>
+                                        <td class="table-cell">{{ number_format($workzone['summary']['k2_not_comply']) }}</td>
+                                        <td class="table-cell font-semibold">{{ number_format($workzone['summary']['k2_total']) }}</td>
+                                        <td class="table-cell">{{ $workzone['summary']['k2_target'] }}</td>
+                                        <td class="table-cell font-bold">{{ number_format($workzone['summary']['k2_ttr_comply'], 2) }}%</td>
+                                        <td class="table-cell font-bold" style="color: {{ $workzone['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($workzone['summary']['k2_ach'], 2) }}%</td>
+                                        {{-- K3 Data --}}
+                                        <td class="table-cell">{{ number_format($workzone['summary']['sid_k3']) }}</td>
+                                        <td class="table-cell">{{ number_format($workzone['summary']['k3_comply']) }}</td>
+                                        <td class="table-cell">{{ number_format($workzone['summary']['k3_not_comply']) }}</td>
+                                        <td class="table-cell font-semibold">{{ number_format($workzone['summary']['k3_total']) }}</td>
+                                        <td class="table-cell">{{ $workzone['summary']['k3_target'] }}</td>
+                                        <td class="table-cell font-bold">{{ number_format($workzone['summary']['k3_ttr_comply'], 2) }}%</td>
+                                        <td class="table-cell font-bold" style="color: {{ $workzone['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($workzone['summary']['k3_ach'], 2) }}%</td>
+                                        {{-- Rata2 & Total --}}
+                                        <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($workzone['summary']['rata2_ach'], 2) }}%</td>
+                                        <td class="table-cell bg-gray-600 font-bold">{{ number_format($workzone['summary']['total_tickets']) }}</td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        @else
+                            @foreach ($witel['workzones_direct'] as $workzone)
+                                <tr class="hidden" data-parent="witel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-level="3">
+                                    <td class="table-cell text-left-indent pl-20">{{ $workzone['name'] }}</td>
+                                    {{-- K1 Data --}}
+                                    <td class="table-cell">{{ number_format($workzone['summary']['sid_k1']) }}</td>
+                                    <td class="table-cell">{{ number_format($workzone['summary']['k1_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($workzone['summary']['k1_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($workzone['summary']['k1_total']) }}</td>
+                                    <td class="table-cell">{{ $workzone['summary']['k1_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($workzone['summary']['k1_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $workzone['summary']['k1_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($workzone['summary']['k1_ach'], 2) }}%</td>
+                                    {{-- K2 Data --}}
+                                    <td class="table-cell">{{ number_format($workzone['summary']['sid_k2']) }}</td>
+                                    <td class="table-cell">{{ number_format($workzone['summary']['k2_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($workzone['summary']['k2_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($workzone['summary']['k2_total']) }}</td>
+                                    <td class="table-cell">{{ $workzone['summary']['k2_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($workzone['summary']['k2_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $workzone['summary']['k2_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($workzone['summary']['k2_ach'], 2) }}%</td>
+                                    {{-- K3 Data --}}
+                                    <td class="table-cell">{{ number_format($workzone['summary']['sid_k3']) }}</td>
+                                    <td class="table-cell">{{ number_format($workzone['summary']['k3_comply']) }}</td>
+                                    <td class="table-cell">{{ number_format($workzone['summary']['k3_not_comply']) }}</td>
+                                    <td class="table-cell font-semibold">{{ number_format($workzone['summary']['k3_total']) }}</td>
+                                    <td class="table-cell">{{ $workzone['summary']['k3_target'] }}</td>
+                                    <td class="table-cell font-bold">{{ number_format($workzone['summary']['k3_ttr_comply'], 2) }}%</td>
+                                    <td class="table-cell font-bold" style="color: {{ $workzone['summary']['k3_ach'] >= 100 ? '#22c55e' : '#ef4444' }};">{{ number_format($workzone['summary']['k3_ach'], 2) }}%</td>
+                                    {{-- Rata2 & Total --}}
+                                    <td class="table-cell font-bold" style="background-color: #6b21a8;">{{ number_format($workzone['summary']['rata2_ach'], 2) }}%</td>
+                                    <td class="table-cell bg-gray-600 font-bold">{{ number_format($workzone['summary']['total_tickets']) }}</td>
                                 </tr>
                             @endforeach
-                        @endforeach
+                        @endif
                     @endforeach
                 @empty
-                    <tr><td colspan="23" class="table-cell">Tidak ada data untuk ditampilkan.</td></tr>
+                    <tr><td colspan="23" class="text-center p-4">Tidak ada data untuk filter yang dipilih.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -231,35 +263,39 @@
 @endsection
 
 @push('scripts')
-{{-- Javascript expand/collapse tidak perlu diubah --}}
+{{-- ========================================================= --}}
+{{-- SCRIPT YANG BENAR UNTUK MENGGANTIKAN SCRIPT LAMA ANDA --}}
+{{-- ========================================================= --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tableBody = document.getElementById('datin-table-body');
-    tableBody.addEventListener('click', function(event) {
-        const targetRow = event.target.closest('tr.expandable');
-        if (!targetRow) return;
+    if (tableBody) {
+        tableBody.addEventListener('click', function(event) {
+            const targetRow = event.target.closest('tr.expandable');
+            if (!targetRow) return;
 
-        const id = targetRow.dataset.id;
-        const children = tableBody.querySelectorAll(`tr[data-parent="${id}"]`);
-        targetRow.classList.toggle('expanded');
-        
-        const isHidden = !targetRow.classList.contains('expanded');
+            const id = targetRow.dataset.id;
+            const children = tableBody.querySelectorAll(`tr[data-parent="${id}"]`);
+            targetRow.classList.toggle('expanded');
+            
+            const isHidden = !targetRow.classList.contains('expanded');
 
-        children.forEach(child => {
-            child.classList.toggle('hidden', isHidden);
-            if (isHidden && child.classList.contains('expandable')) {
-                child.classList.remove('expanded');
-                const childId = child.dataset.id;
-                const grandChildren = tableBody.querySelectorAll(`tr[data-parent^="${childId}"]`);
-                grandChildren.forEach(grandChild => {
-                    grandChild.classList.add('hidden');
-                    if(grandChild.classList.contains('expandable')) {
-                         grandChild.classList.remove('expanded');
-                    }
-                });
-            }
+            children.forEach(child => {
+                child.classList.toggle('hidden', isHidden);
+                if (isHidden && child.classList.contains('expandable')) {
+                    child.classList.remove('expanded');
+                    const childId = child.dataset.id;
+                    const grandChildren = tableBody.querySelectorAll(`tr[data-parent^="${childId}"]`);
+                    grandChildren.forEach(grandChild => {
+                        grandChild.classList.add('hidden');
+                        if(grandChild.classList.contains('expandable')) {
+                             grandChild.classList.remove('expanded');
+                        }
+                    });
+                }
+            });
         });
-    });
+    }
 });
 </script>
 @endpush

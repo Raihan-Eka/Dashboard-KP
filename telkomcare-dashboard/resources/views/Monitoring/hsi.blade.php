@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-{{-- Style ini penting untuk memastikan pop-up kalender berwarna terang/putih --}}
+{{-- Style to ensure the date picker calendar is light-themed --}}
 <style>
     input[type="date"] {
         color-scheme: light;
@@ -41,7 +41,6 @@
     </div>
 
     <div class="bg-gray-800 p-4 rounded-lg shadow-lg overflow-x-auto">
-         {{-- Kode tabel tidak berubah --}}
          <table class="min-w-full text-white">
             <thead class="bg-gray-700">
                 <tr>
@@ -69,17 +68,17 @@
                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ $data->treg }}</td>
                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h4_comply) }}</td>
                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h4_not_comply) }}</td>
-                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h4_target, 2) }}%</td>
-                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h4_real, 2) }}%</td>
+                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h4_target, 0) }}%</td>
+                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h4_real, 1) }}%</td>
                         <td class="p-3 text-sm whitespace-nowrap font-bold border border-gray-600 {{ $data->h4_ach >= 100 ? 'text-green-400' : 'text-red-400' }}">
-                            {{ number_format($data->h4_ach, 2) }}%
+                            {{ number_format($data->h4_ach, 1) }}%
                         </td>
                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h24_comply) }}</td>
                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h24_not_comply) }}</td>
-                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h24_target, 2) }}%</td>
-                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h24_real, 2) }}%</td>
+                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h24_target, 0) }}%</td>
+                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->h24_real, 1) }}%</td>
                         <td class="p-3 text-sm whitespace-nowrap font-bold border border-gray-600 {{ $data->h24_ach >= 100 ? 'text-green-400' : 'text-red-400' }}">
-                            {{ number_format($data->h24_ach, 2) }}%
+                            {{ number_format($data->h24_ach, 1) }}%
                         </td>
                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600">{{ number_format($data->total_tiket) }}</td>
                     </tr>
@@ -90,10 +89,7 @@
                 @endforelse
             </tbody>
         </table>
+         <p class="text-xs text-gray-400 mt-3">Jika dibawah target maka angka Ach berwarna merah. Jika diatas target maka angka Ach berwarna hijau.</p>
     </div>
 </div>
 @endsection
-
-{{-- BLOK SCRIPT DI BAWAH INI SEKARANG KOSONG KARENA FLATPICKR DIHAPUS --}}
-@push('scripts')
-@endpush
