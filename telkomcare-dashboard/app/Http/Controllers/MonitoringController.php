@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\WifiTicket;
 use App\Models\HsiTicket;
 use Carbon\Carbon;
+use Illuminate\Support\Collection; // <-- Pastikan ini ditambahkan
 
 class MonitoringController extends Controller
 {
@@ -168,66 +169,111 @@ class MonitoringController extends Controller
             fclose($file);
         }, 200, $headers);
     }
-public function pageHsi(Request $request)
-{
-    // ====== BLOK BARU UNTUK TANGGAL DEFAULT ======
-    // Jika tidak ada tanggal yang dipilih, atur default ke bulan ini
-    $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
-    $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
-
-    $filters = [
-        'start_date' => $startDate,
-        'end_date' => $endDate,
-    ];
-    // ===============================================
-
-    // Query sekarang akan selalu menggunakan filter tanggal
-    $query = \App\Models\HsiTicket::query();
-               // ->whereBetween('REPORTED_DATE', [$filters['start_date'], $filters['end_date']]);
     
-    $allData = $query->get();
+    // --- MULAI BLOK KODE BARU UNTUK PAGE HSI ---
 
-    $dataHsi = $allData->groupBy('REGIONAL')->map(function ($items, $tregName) {
+    /**
+     * Helper function baru untuk menghitung summary data HSI.
+     */
+       private function calculateSummaryHsi(Collection $items)
+    {
         $summary = [];
         $categories = ['4H', '24H'];
+        $totalTickets = $items->count();
 
         foreach ($categories as $cat) {
-            $catItems = $items->where('CATEGORY', $cat);
-            $comply = $catItems->where('STATUS', 'Comply')->count();
-            $notComply = $catItems->where('STATUS', 'Not Comply')->count();
+            $catItems = $items->where('CATEGORY', '==', $cat);
+            $comply = $catItems->where('STATUS', '==', 'Comply')->count();
+            $notComply = $catItems->where('STATUS', '==', 'Not Comply')->count();
             $total = $comply + $notComply;
             $target = $catItems->first()->TARGET_PERCENTAGE ?? 0;
             $real = ($total > 0) ? ($comply / $total) * 100 : 0;
             $ach = ($target > 0) ? ($real / $target) * 100 : 0;
             
             $key = 'h' . str_replace('H', '', $cat) . '_';
-            
             $summary[$key.'comply'] = $comply;
             $summary[$key.'not_comply'] = $notComply;
-            $summary[$key.'total'] = $total;
             $summary[$key.'target'] = $target;
             $summary[$key.'real'] = $real;
             $summary[$key.'ach'] = $ach;
         }
-        $summary['treg'] = $tregName;
-        $summary['total_tiket'] = $items->count();
+        $summary['total_tiket'] = $totalTickets;
         return (object)$summary;
-    });
-    
-    for ($i = 1; $i <= 7; $i++) {
-        $tregName = 'REG-' . $i;
-        if (!$dataHsi->has($tregName)) {
-            $dataHsi->put($tregName, (object)[
-                'treg' => $tregName,
-                'h4_comply' => 0, 'h4_not_comply' => 0, 'h4_total' => 0, 'h4_target' => 0, 'h4_real' => 0, 'h4_ach' => 0,
-                'h24_comply' => 0, 'h24_not_comply' => 0, 'h24_total' => 0, 'h24_target' => 0, 'h24_real' => 0, 'h24_ach' => 0,
-                'total_tiket' => 0
-            ]);
-        }
+    }
+
+    /**
+     * Helper function baru untuk memproses anak dari Regional (Witel, HSA, Workzone).
+     */
+    private function processRegionalChildren(Collection $regionalItems, string $regionalName): Collection
+    {
+        return $regionalItems->whereNotNull('WITEL')->groupBy('WITEL')->map(function ($witelItems, $witelName) use ($regionalName) {
+            
+            $children = collect();
+            // Jika REG-3, proses HSA terlebih dahulu
+            if ($regionalName === 'REG-3') {
+                $children = $witelItems->whereNotNull('HSA')->groupBy('HSA')->map(function ($hsaItems, $hsaName) {
+                    $workzones = $hsaItems->whereNotNull('WORKZONE')->groupBy('WORKZONE')->map(function ($workzoneItems, $workzoneName) {
+                        return (object)[ 'name' => $workzoneName, 'summary' => $this->calculateSummaryHsi($workzoneItems) ];
+                    });
+                    return (object)[ 'name' => $hsaName, 'summary' => $this->calculateSummaryHsi($hsaItems), 'workzones' => $workzones->sortKeys()->values() ];
+                });
+            } else { // Jika bukan REG-3, anak dari witel adalah workzone
+                $children = $witelItems->whereNotNull('WORKZONE')->groupBy('WORKZONE')->map(function ($workzoneItems, $workzoneName) {
+                    return (object)[ 'name' => $workzoneName, 'summary' => $this->calculateSummaryHsi($workzoneItems) ];
+                });
+            }
+
+            return (object)[
+                'name' => $witelName,
+                'summary' => $this->calculateSummaryHsi($witelItems),
+                'children' => $children->sortKeys()->values()
+            ];
+        });
+    }
+
+
+    /**
+     * Fungsi pageHsi yang disederhanakan.
+     */
+public function pageHsi(Request $request)
+{
+    $filters = [
+        'start_date' => $request->input('start_date'),
+        'end_date' => $request->input('end_date'),
+    ];
+
+    $query = HsiTicket::query();
+
+    if ($filters['start_date'] && $filters['end_date']) {
+        $query->whereBetween('REPORTED_DATE', [$filters['start_date'], $filters['end_date']]);
     }
     
-    $dataHsi = $dataHsi->sortBy('treg')->values();
+    $allData = $query->get();
 
-    return view('monitoring.hsi', compact('dataHsi', 'filters'));
+    // Manipulasi data sementara
+    $allData = $allData->map(function ($item) {
+        if (isset($item->WITEL) && $item->WITEL === 'BANDUNGBRT') { $item->REGIONAL = 'REG-3'; }
+        if (isset($item->WITEL) && $item->WITEL === 'BANTENHTTPS://OS') { $item->WITEL = 'BANTEN'; }
+        return $item;
+    });
+
+    // Logika utama menjadi lebih sederhana
+    $dataRegions = $allData->groupBy('REGIONAL')->map(function (Collection $regionalItems, string $regionalName) { // <-- PERUBAIKAN DI SINI
+        
+        // Panggil helper function yang baru untuk memproses Witel dan anak-anaknya
+        $witels = $this->processRegionalChildren($regionalItems, $regionalName);
+
+        return (object)[
+            'name' => $regionalName,
+            'summary' => $this->calculateSummaryHsi($regionalItems),
+            'witels' => $witels->sortKeys()->values()
+        ];
+    })->sortKeys()->values();
+
+    // Kalkulasi data Nasional
+    $dataNasional = $this->calculateSummaryHsi($allData);
+
+    return view('monitoring.hsi', compact('dataRegions', 'filters', 'dataNasional'));
 }
+    // --- AKHIR BLOK KODE HSI ---
 }
