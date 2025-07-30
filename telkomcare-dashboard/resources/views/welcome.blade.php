@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Telkomcare</title>
+    <title>Login - EbisCare</title>
     <style>
         /* General Body Styling */
         body {
@@ -175,7 +175,7 @@
         </div>
 
         <div class="footer">
-            ©2025 Telkomcare™ - PT Telkom Indonesia Tbk.
+            ©2025 EbisCare™ - PT Telkom Indonesia Tbk.
         </div>
     </div>
 

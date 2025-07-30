@@ -140,7 +140,7 @@
                 @empty
                     <tr><td colspan="12" class="text-center p-4">Tidak ada data untuk filter yang dipilih.</td></tr>
                 @endforelse
-            ...
+            
             </tbody>
 
             {{-- TAMBAHKAN BLOK FOOTER INI --}}
@@ -152,7 +152,7 @@
             </tfoot>
             
         </table>
-        ...
+        
     </div>
 </div>
 @endsection
