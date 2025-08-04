@@ -24,6 +24,11 @@ Route::middleware('auth')->group(function () {
     // Halaman Datin
     Route::get('/datin', [PageController::class, 'showDatin'])->name('datin');
 
+    // --- TAMBAHKAN DUA RUTE INI ---
+    Route::post('/datin/upload-excel', [PageController::class, 'uploadDatinExcel'])->name('datin.upload.excel');
+    Route::post('/datin/store-manual', [PageController::class, 'storeDatinManual'])->name('datin.store.manual');
+    // --------------------------------
+
     // === TAMBAHKAN BARIS INI UNTUK MENGAKTIFKAN DOWNLOAD ===
     Route::get('/datin/download', [PageController::class, 'downloadDatinRaw'])->name('datin.download');
 

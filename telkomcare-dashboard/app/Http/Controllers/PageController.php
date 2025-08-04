@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\DatinRawData;
+use App\Imports\DatinImport;
 use App\Models\HsiTicket;
 use Illuminate\Support\Collection;
 use App\Http\Controllers\MonitoringController;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PageController extends Controller
 {
@@ -114,6 +116,20 @@ class PageController extends Controller
         
         return $summary;
     }
+
+    public function uploadDatinExcel(Request $request)
+{
+    $request->validate([
+        'datin_excel' => 'required|mimes:xlsx,xls',
+    ]);
+
+    try {
+        Excel::import(new DatinImport, $request->file('datin_excel'));
+        return redirect()->route('datin')->with('success', 'Data Excel berhasil di-upload dan diproses!');
+    } catch (\Exception $e) {
+        return redirect()->route('datin')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+}
 
     public function downloadDatinRaw(Request $request)
     {

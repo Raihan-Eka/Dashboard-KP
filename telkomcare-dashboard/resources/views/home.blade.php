@@ -5,7 +5,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-xl font-bold text-white mb-4">Perbandingan Rata-Rata Achievement Datin per Regional</h2>
+            <h2 class="text-xl font-bold text-white mb-4">Perbandingan TTR Comply Datin per Regional</h2>
             <div style="position: relative; height:40vh; width:100%;">
                 <canvas id="datinChart"></canvas>
             </div>
@@ -35,12 +35,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Fungsi pembantu untuk pembulatan agar rapi
-    function round(value, decimals) {
-        return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
-    }
+    function round(value, decimals) { return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals); }
 
-    // Opsi umum untuk semua grafik agar tidak duplikasi
+    // --- DEFINISI WARNA STANDAR ---
+    const greenColor = 'rgba(75, 192, 192, 0.6)'; // Warna untuk "Target Tercapai"
+    const redColor = 'rgba(255, 99, 132, 0.6)';   // Warna untuk "Target Tidak Tercapai"
+
+    // Opsi umum untuk semua grafik
     const commonChartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -60,18 +61,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // --- 1. Grafik Datin (Logika tetap sama, berdasarkan Ach) ---
-        const datinData = @json($datinData);
+    // --- 1. Grafik Datin ---
+    const datinData = @json($datinData);
     const datinLabels = datinData.map(item => item.name);
     
-    // Siapkan data dan warna untuk setiap K
     const k1_values = datinData.map(item => round(item.summary.k1_ttr_comply, 2));
     const k2_values = datinData.map(item => round(item.summary.k2_ttr_comply, 2));
     const k3_values = datinData.map(item => round(item.summary.k3_ttr_comply, 2));
 
-    const k1_colors = datinData.map(item => item.summary.k1_ttr_comply >= item.summary.k1_target ? 'rgba(75, 192, 192, 0.6)' : 'rgba(255, 99, 132, 0.6)');
-    const k2_colors = datinData.map(item => item.summary.k2_ttr_comply >= item.summary.k2_target ? 'rgba(54, 162, 235, 0.6)' : 'rgba(255, 206, 86, 0.6)');
-    const k3_colors = datinData.map(item => item.summary.k3_ttr_comply >= item.summary.k3_target ? 'rgba(153, 102, 255, 0.6)' : 'rgba(255, 159, 64, 0.6)');
+    const k1_colors = datinData.map(item => item.summary.k1_ttr_comply >= item.summary.k1_target ? greenColor : redColor);
+    const k2_colors = datinData.map(item => item.summary.k2_ttr_comply >= item.summary.k2_target ? greenColor : redColor);
+    const k3_colors = datinData.map(item => item.summary.k3_ttr_comply >= item.summary.k3_target ? greenColor : redColor);
     
     new Chart(document.getElementById('datinChart'), {
         type: 'bar',
@@ -85,12 +85,12 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         options: commonChartOptions
     });
-    // --- 2. Grafik WiFi (Logika pewarnaan diubah) ---
+
+    // --- 2. Grafik WiFi ---
     const wifiData = @json($wifiData);
     const wifiLabels = wifiData.map(item => item.name);
     const wifiValues = wifiData.map(item => round(item.summary.compliance_percentage, 2));
-    // LOGIKA PEWARNAAN BARU: Bandingkan compliance_percentage dengan target
-    const wifiColors = wifiData.map(item => item.summary.compliance_percentage >= item.summary.target ? 'rgba(54, 162, 235, 0.6)' : 'rgba(255, 206, 86, 0.6)');
+    const wifiColors = wifiData.map(item => item.summary.compliance_percentage >= item.summary.target ? greenColor : redColor);
 
     new Chart(document.getElementById('wifiChart'), {
         type: 'bar',
@@ -101,16 +101,14 @@ document.addEventListener('DOMContentLoaded', function() {
         options: commonChartOptions
     });
 
-    // --- 3. Grafik HSI (Logika pewarnaan diubah) ---
+    // --- 3. Grafik HSI ---
     const hsiData = @json($hsiData);
     const hsiLabels = hsiData.map(item => item.name);
     const hsi4HValues = hsiData.map(item => round(item.summary.h4_real, 2));
     const hsi24HValues = hsiData.map(item => round(item.summary.h24_real, 2));
     
-    // LOGIKA PEWARNAAN BARU: Bandingkan h4_real dengan h4_target
-    const hsi4HColors = hsiData.map(item => item.summary.h4_real >= item.summary.h4_target ? 'rgba(255, 99, 132, 0.6)' : 'rgba(255, 159, 64, 0.6)');
-    // LOGIKA PEWARNAAN BARU: Bandingkan h24_real dengan h24_target
-    const hsi24HColors = hsiData.map(item => item.summary.h24_real >= item.summary.h24_target ? 'rgba(75, 192, 192, 0.6)' : 'rgba(153, 102, 255, 0.6)');
+    const hsi4HColors = hsiData.map(item => item.summary.h4_real >= item.summary.h4_target ? greenColor : redColor);
+    const hsi24HColors = hsiData.map(item => item.summary.h24_real >= item.summary.h24_target ? greenColor : redColor);
 
     new Chart(document.getElementById('hsiChart'), {
         type: 'bar',
