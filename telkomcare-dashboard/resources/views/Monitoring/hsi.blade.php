@@ -2,13 +2,12 @@
 
 @push('styles')
 <style>
-    /* Mengadopsi style dari wifi.blade.php */
+    /* Mengatur style untuk baris yang bisa di-klik */
     .parent-row { cursor: pointer; }
     .parent-row:hover { background-color: #4A5568; }
-    .parent-row.expanded .fa-chevron-right { transform: rotate(90deg); }
 
     /* Indentasi untuk level anak */
-    .level-1 { font-weight: bold; background-color: #374151; } /* BG Sedikit lebih gelap untuk Regional */
+    .level-1 td:first-child { font-weight: bold; }
     .level-2 td:first-child { padding-left: 2.5rem !important; }
     .level-3 td:first-child { padding-left: 4.5rem !important; }
     .level-4 td:first-child { padding-left: 6.5rem !important; }
@@ -16,55 +15,101 @@
     /* Style untuk ikon expand/collapse */
     .toggle-icon {
         display: inline-block;
-        width: 14px; /* Sesuaikan lebar ikon */
-        transition: transform 0.2s ease-in-out;
-        text-align: center;
+        width: 1em;
+        transition: transform 0.2s;
+        font-style: normal;
+        font-weight: bold;
+        margin-right: 8px;
+    }
+    .parent-row:not(.collapsed) .toggle-icon {
+        transform: rotate(90deg);
+    }
+    /* Sembunyikan semua baris anak secara default dengan CSS */
+    tr[class*="child-of-"] {
+        display: none;
     }
 </style>
 @endpush
 
 @section('content')
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-2xl font-bold mb-4 text-white">Resume TTR - HSI (INDIBIZ)</h1>
-
-    {{-- Filter Tanggal --}}
-    <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
-        <form method="GET" action="{{ route('monitoring.hsi') }}" class="flex flex-col sm:flex-row items-center gap-4">
-            <div>
-                <label for="start_date" class="text-sm font-medium text-gray-300">Dari Tanggal:</label>
-                <input type="date" id="start_date" name="start_date" value="{{ $filters['start_date'] ?? '' }}" class="mt-1 block w-full bg-gray-700 border-gray-700 rounded-md shadow-sm text-white p-2">
-            </div>
-            <div>
-                <label for="end_date" class="text-sm font-medium text-gray-300">Sampai Tanggal:</label>
-                <input type="date" id="end_date" name="end_date" value="{{ $filters['end_date'] ?? '' }}" class="mt-1 block w-full bg-gray-700 border-gray-700 rounded-md shadow-sm text-white p-2">
-            </div>
-            <div class="flex items-end gap-2 mt-5 sm:mt-0">
-                <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">SUBMIT</button>
-                <a href="{{ route('monitoring.hsi') }}" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md text-center">Clear</a>
-            </div>
-        </form>
+    
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold text-white">Resume TTR - HSI (INDIBIZ)</h1>
     </div>
 
-    {{-- Tabel Data --}}
+    @if (session('success'))
+        <div class="bg-green-600 border-green-700 text-white p-4 rounded-lg mb-6" role="alert">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="bg-red-600 border-red-700 text-white p-4 rounded-lg mb-6" role="alert">
+            <p class="font-bold">Error!</p><p>{{ session('error') }}</p>
+        </div>
+    @endif
+
+    <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <form action="{{ route('monitoring.hsi') }}" method="GET" class="flex items-center space-x-2">
+                <input type="date" name="start_date" value="{{ $filters['start_date'] ?? '' }}" class="bg-gray-700 text-white rounded px-2 py-1 text-sm">
+                <span class="text-gray-400">to</span>
+                <input type="date" name="end_date" value="{{ $filters['end_date'] ?? '' }}" class="bg-gray-700 text-white rounded px-2 py-1 text-sm">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm">SUBMIT</button>
+                <a href="{{ route('monitoring.hsi') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm">Clear</a>
+            </form>
+            <button id="openUploadModalBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm">
+                Upload Data
+            </button>
+        </div>
+    </div>
+
     <div class="bg-gray-800 p-4 rounded-lg shadow-lg overflow-x-auto">
         @php
-        // Fungsi pembantu untuk mencetak baris <td> agar tidak duplikasi kode
-        function print_hsi_tds($summary) {
-            $h4_ach_class = $summary->h4_ach >= 100 ? 'text-green-400' : 'text-red-400';
-            $h24_ach_class = $summary->h24_ach >= 100 ? 'text-green-400' : 'text-red-400';
-            
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_comply) . "</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_not_comply) . "</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_target, 0) . "%</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_real, 1) . "%</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap font-bold border border-gray-600 text-center $h4_ach_class'>" . number_format($summary->h4_ach, 1) . "%</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_comply) . "</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_not_comply) . "</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_target, 0) . "%</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_real, 1) . "%</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap font-bold border border-gray-600 text-center $h24_ach_class'>" . number_format($summary->h24_ach, 1) . "%</td>";
-            echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->total_tiket) . "</td>";
-        }
+            // Fungsi pembantu untuk mencetak baris <td> agar tidak duplikasi kode
+            function print_hsi_tds($summary) {
+                // Tentukan kelas warna berdasarkan kondisi
+                $h4_real_class = ($summary->h4_real < $summary->h4_target) ? 'text-red-400' : '';
+                $h4_ach_class = ($summary->h4_ach < 100) ? 'text-red-400' : 'text-green-400';
+                $h24_real_class = ($summary->h24_real < $summary->h24_target) ? 'text-red-400' : '';
+                $h24_ach_class = ($summary->h24_ach < 100) ? 'text-red-400' : 'text-green-400';
+                
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_comply) . "</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_not_comply) . "</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h4_target, 0) . "%</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center font-semibold $h4_real_class'>" . number_format($summary->h4_real, 1) . "%</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap font-bold border border-gray-600 text-center $h4_ach_class'>" . number_format($summary->h4_ach, 1) . "%</td>";
+                
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_comply) . "</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_not_comply) . "</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->h24_target, 0) . "%</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center font-semibold $h24_real_class'>" . number_format($summary->h24_real, 1) . "%</td>";
+                echo "<td class='p-3 text-sm whitespace-nowrap font-bold border border-gray-600 text-center $h24_ach_class'>" . number_format($summary->h24_ach, 1) . "%</td>";
+                
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-center'>" . number_format($summary->total_tiket) . "</td>";
+            }
+
+            // Fungsi rekursif untuk mencetak baris tabel secara bertingkat
+            function print_summary_row($item, $level = 1, $parentId = '', $isReg3 = false) {
+                $summary = $item->summary;
+                $rowId = \Illuminate\Support\Str::slug($parentId . '-' . $item->name, '-');
+                $parentClass = !empty($parentId) ? 'child-of-'.\Illuminate\Support\Str::slug($parentId, '-') : '';
+                $hasChildren = (isset($item->witels) && count($item->witels) > 0) || (isset($item->children) && count($item->children) > 0) || (isset($item->workzones) && count($item->workzones) > 0);
+
+                echo "<tr class='level-$level $parentClass " . ($hasChildren ? 'parent-row collapsed' : '') . "' data-id='$rowId'>";
+                echo "<td class='p-3 text-sm whitespace-nowrap border border-gray-600 text-left'>";
+                if ($hasChildren) { echo "<i class='toggle-icon'>></i>"; }
+                echo e($item->name) . "</td>";
+                print_hsi_tds($summary);
+                echo "</tr>";
+
+                if ($hasChildren) {
+                    $nextLevel = $level + 1;
+                    $children = $item->witels ?? $item->children ?? $item->workzones ?? [];
+                    $isNowReg3 = ($level == 1 && $item->name == 'REG-3');
+                    foreach($children as $child) {
+                        print_summary_row($child, $nextLevel, $rowId, $isNowReg3);
+                    }
+                }
+            }
         @endphp
 
         <table class="min-w-full text-white">
@@ -90,97 +135,88 @@
                     <th class="p-2 text-xs font-semibold tracking-wide text-center border border-gray-600"></th>
                 </tr>
             </thead>
-            <tbody id="hsi-table-body" class="bg-gray-800 divide-y divide-gray-700">
+            <tbody class="bg-gray-800 divide-y divide-gray-700">
                 @forelse ($dataRegions as $region)
-                    @php $hasWitels = !$region->witels->isEmpty(); @endphp
-                    <tr class="level-1 @if($hasWitels) parent-row @endif" data-id="region-{{ $loop->index }}">
-                        <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left">
-                            @if($hasWitels)<i class="fas fa-chevron-right toggle-icon"></i>@endif{{ $region->name }}
-                        </td>
-                        @php print_hsi_tds($region->summary) @endphp
-                    </tr>
-
-                    @foreach ($region->witels as $witel)
-                        @php 
-                            $isReg3 = ($region->name === 'REG-3');
-                            $hasChildren = !$witel->children->isEmpty();
-                        @endphp
-                        <tr class="level-2 hidden @if($hasChildren) parent-row @endif" data-parent="region-{{ $loop->parent->index }}" data-id="witel-{{ $loop->parent->index }}-{{ $loop->index }}">
-                            <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left">
-                                @if($hasChildren)<i class="fas fa-chevron-right toggle-icon"></i>@endif{{ $witel->name }}
-                            </td>
-                            @php print_hsi_tds($witel->summary) @endphp
-                        </tr>
-
-                        @foreach ($witel->children as $child)
-                            @if ($isReg3)
-                                {{-- Anak dari Witel di REG-3 adalah HSA --}}
-                                @php $hasWorkzones = !$child->workzones->isEmpty(); @endphp
-                                <tr class="level-3 hidden @if($hasWorkzones) parent-row @endif" data-parent="witel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}" data-id="hsa-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}-{{ $loop->index }}">
-                                    <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left">
-                                        @if($hasWorkzones)<i class="fas fa-chevron-right toggle-icon"></i>@endif{{ $child->name }}
-                                    </td>
-                                    @php print_hsi_tds($child->summary) @endphp
-                                </tr>
-                                @foreach($child->workzones as $workzone)
-                                    <tr class="level-4 hidden" data-parent="hsa-{{ $loop->parent->parent->parent->index }}-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}">
-                                         <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left">{{ $workzone->name }}</td>
-                                         @php print_hsi_tds($workzone->summary) @endphp
-                                    </tr>
-                                @endforeach
-                            @else
-                                {{-- Anak dari Witel di regional lain adalah Workzone --}}
-                                <tr class="level-3 hidden" data-parent="witel-{{ $loop->parent->parent->index }}-{{ $loop->parent->index }}">
-                                    <td class="p-3 text-sm whitespace-nowrap border border-gray-600 text-left">{{ $child->name }}</td>
-                                     @php print_hsi_tds($child->summary) @endphp
-                                </tr>
-                            @endif
-                        @endforeach
-                    @endforeach
+                    @php print_summary_row($region, 1, '', ($region->name == 'REG-3')) @endphp
                 @empty
-                    <tr><td colspan="12" class="text-center p-4">Tidak ada data untuk filter yang dipilih.</td></tr>
+                    <tr><td colspan="12" class="text-center p-4 border border-gray-600">Tidak ada data untuk filter yang dipilih.</td></tr>
                 @endforelse
-            
             </tbody>
-
-            {{-- TAMBAHKAN BLOK FOOTER INI --}}
-            <tfoot class="bg-gray-600 font-bold">
+             <tfoot class="bg-gray-600 font-bold">
                 <tr>
                     <td class="p-3 text-sm whitespace-nowrap border border-gray-500 text-left">NASIONAL</td>
-                    @php print_hsi_tds($dataNasional) @endphp
+                    @php if(isset($dataNasional)) print_hsi_tds($dataNasional); @endphp
                 </tr>
             </tfoot>
-            
         </table>
-        
+    </div>
+</div>
+
+{{-- POP-UP (MODAL) UNTUK UPLOAD FILE --}}
+<div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg">
+        <div class="border-b border-gray-700 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white">Upload Data HSI (Excel)</h3>
+            <button id="closeUploadModalBtn" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+        </div>
+        <div class="p-6">
+            <form action="{{ route('hsi.upload.excel') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <label for="hsi_excel" class="block text-sm font-medium text-gray-300 mb-2">Pilih File Excel (.xlsx, .xls)</label>
+                <input type="file" name="hsi_excel" id="hsi_excel" required
+                       class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md
+                              file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white
+                              hover:file:bg-gray-600">
+                <button type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
+                    Upload & Proses File
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const tableBody = document.getElementById('hsi-table-body');
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Logika untuk Tabel Drill-Down ---
+    const tableBody = document.querySelector('tbody');
     if (tableBody) {
         tableBody.addEventListener('click', function(event) {
-            // Hanya trigger jika baris yang bisa di-expand yang diklik
             const targetRow = event.target.closest('tr.parent-row');
             if (!targetRow) return;
-
-            const id = targetRow.dataset.id;
-            const children = tableBody.querySelectorAll(`tr[data-parent="${id}"]`);
-            targetRow.classList.toggle('expanded');
             
-            // Toggle visibility anak-anaknya
-            children.forEach(child => {
-                child.classList.toggle('hidden');
-                // Jika parent ditutup, tutup juga semua cucu/cicitnya
-                if (child.classList.contains('hidden') && child.classList.contains('parent-row')) {
-                    child.classList.remove('expanded');
-                    const grandChildren = tableBody.querySelectorAll(`tr[data-parent="${child.dataset.id}"]`);
-                    grandChildren.forEach(grandChild => grandChild.classList.add('hidden'));
+            targetRow.classList.toggle('collapsed');
+            const id = targetRow.dataset.id;
+            const children = document.querySelectorAll('.child-of-' + id);
+            
+            children.forEach(function(child) {
+                if (targetRow.classList.contains('collapsed')) {
+                    child.style.display = 'none';
+                    if (child.classList.contains('parent-row')) {
+                        child.classList.add('collapsed');
+                    }
+                } else {
+                    child.style.display = 'table-row';
                 }
             });
+        });
+    }
+
+    // --- Logika untuk Modal Upload ---
+    const modal = document.getElementById('uploadModal');
+    const openBtn = document.getElementById('openUploadModalBtn');
+    const closeBtn = document.getElementById('closeUploadModalBtn');
+
+    if (modal && openBtn && closeBtn) {
+        const closeModal = () => modal.classList.add('hidden');
+        
+        openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
         });
     }
 });

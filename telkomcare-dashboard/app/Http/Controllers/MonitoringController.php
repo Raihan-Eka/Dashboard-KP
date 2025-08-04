@@ -9,7 +9,9 @@ use App\Models\WifiTicket;
 use App\Models\HsiTicket;
 use Carbon\Carbon;
 use Illuminate\Support\Collection; // <-- Pastikan ini ditambahkan
-
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\WifiImport;
+use App\Imports\HsiImport;
 class MonitoringController extends Controller
 {
     /**
@@ -152,42 +154,62 @@ class MonitoringController extends Controller
         ];
     }
 
-    public function downloadWifiRawData(Request $request)
-    {
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        $fileName = 'raw_wifi_data';
-        if ($startDate && $endDate) {
-            $fileName = "raw_wifi_data_from_{$startDate}_to_{$endDate}.csv";
-        }
+    public function uploadWifiExcel(Request $request)
+{
+    $request->validate([
+        'wifi_excel' => 'required|mimes:xlsx,xls',
+    ]);
 
-        $headers = [
-            "Content-type"        => "text/csv; charset=utf-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
-
-        return response()->stream(function () use ($startDate, $endDate) {
-            $file = fopen('php://output', 'w');
-            fwrite($file, "\xEF\xBB\xBF");
-            $columns = DB::getSchemaBuilder()->getColumnListing('wifi_tickets_raw');
-            fputcsv($file, $columns, ';');
-            
-            $query = WifiTicket::query();
-            if ($startDate && $endDate) {
-                $query->whereBetween('Reported_Date', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
-            }
-            foreach ($query->orderBy('id')->cursor() as $row) {
-                fputcsv($file, (array) $row->getAttributes(), ';');
-            }
-            fclose($file);
-        }, 200, $headers);
+    try {
+        Excel::import(new WifiImport, $request->file('wifi_excel'));
+        return redirect()->route('monitoring.wifi')->with('success', 'Data Excel WiFi berhasil di-upload!');
+    } catch (\Exception $e) {
+        return redirect()->route('monitoring.wifi')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
-    
-    // --- MULAI BLOK KODE BARU UNTUK PAGE HSI ---
+}
+         /**
+     * FUNGSI DOWNLOAD WIFI YANG SUDAH DIPERBAIKI
+     */
+  // Ganti fungsi downloadWifiRawData yang ada dengan versi debug ini
 
+public function downloadWifiRawData(Request $request)
+{
+    $startDate = $request->input('start_date');
+    $endDate = $request->input('end_date');
+    $fileName = 'raw_wifi_data.csv';
+
+    if ($startDate && $endDate) {
+        $fileName = "raw_wifi_data_from_{$startDate}_to_{$endDate}.csv";
+    }
+
+    $headers = [
+        "Content-type"        => "text/csv; charset=utf-8",
+        "Content-Disposition" => "attachment; filename=$fileName",
+        "Pragma"              => "no-cache",
+        "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+        "Expires"             => "0"
+    ];
+
+    return response()->stream(function () use ($startDate, $endDate) {
+        $file = fopen('php://output', 'w');
+        fwrite($file, "\xEF\xBB\xBF");
+
+        $columns = DB::getSchemaBuilder()->getColumnListing('wifi_tickets_raw');
+        fputcsv($file, $columns, ';');
+        
+        $query = \App\Models\WifiTicket::query();
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('Reported_Date', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        }
+        
+        foreach ($query->orderBy('id')->cursor() as $row) {
+            fputcsv($file, (array) $row->getAttributes(), ';');
+        }
+        
+        fclose($file);
+    }, 200, $headers);
+}
     /**
      * Helper function baru untuk menghitung summary data HSI.
      */
@@ -293,4 +315,17 @@ class MonitoringController extends Controller
         
         return view('monitoring.hsi', compact('dataRegions', 'filters', 'dataNasional'));
     }
+    public function uploadHsiExcel(Request $request)
+{
+    $request->validate([
+        'hsi_excel' => 'required|mimes:xlsx,xls',
+    ]);
+
+    try {
+        Excel::import(new HsiImport, $request->file('hsi_excel'));
+        return redirect()->route('monitoring.hsi')->with('success', 'Data Excel HSI berhasil di-upload!');
+    } catch (\Exception $e) {
+        return redirect()->route('monitoring.hsi')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+}
 }

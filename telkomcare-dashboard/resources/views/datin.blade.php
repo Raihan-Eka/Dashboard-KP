@@ -263,7 +263,6 @@
         <div class="px-6 py-2 border-b border-gray-700">
             <nav class="flex space-x-4">
                 <button data-tab="excel" class="tab-button text-white py-2 px-4 border-b-2 font-medium tab-active">Upload Massal (Excel)</button>
-                <button data-tab="manual" class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent font-medium">Tambah Manual</button>
             </nav>
         </div>
         <div class="p-6">
@@ -275,26 +274,6 @@
                         <input type="file" name="datin_excel" id="datin_excel" required class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600">
                     </div>
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Upload & Proses File</button>
-                </form>
-            </div>
-            <div id="manualContent" class="tab-content hidden">
-                <form action="{{ route('datin.store.manual') }}" method="POST">
-                    @csrf
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="regional" class="block text-sm font-medium text-gray-300">Regional</label>
-                            <input type="text" name="regional" id="regional" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md text-white p-2">
-                        </div>
-                        <div>
-                            <label for="witel" class="block text-sm font-medium text-gray-300">Witel</label>
-                            <input type="text" name="witel" id="witel" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md text-white p-2">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label for="incident" class="block text-sm font-medium text-gray-300">Incident</label>
-                            <input type="text" name="incident" id="incident" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md text-white p-2">
-                        </div>
-                    </div>
-                    <button type="submit" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Simpan Data</button>
                 </form>
             </div>
         </div>
