@@ -37,11 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function round(value, decimals) { return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals); }
 
-    // --- DEFINISI WARNA STANDAR ---
-    const greenColor = 'rgba(75, 192, 192, 0.6)'; // Warna untuk "Target Tercapai"
-    const redColor = 'rgba(255, 99, 132, 0.6)';   // Warna untuk "Target Tidak Tercapai"
+    const greenColor = 'rgba(75, 192, 192, 0.6)';
+    const redColor = 'rgba(255, 99, 132, 0.6)';
 
-    // Opsi umum untuk semua grafik
     const commonChartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -78,9 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: datinLabels,
             datasets: [
-                { label: 'TTR Comply K1 (%)', data: k1_values, backgroundColor: k1_colors },
-                { label: 'TTR Comply K2 (%)', data: k2_values, backgroundColor: k2_colors },
-                { label: 'TTR Comply K3 (%)', data: k3_values, backgroundColor: k3_colors },
+                { label: 'TTR Comply K1 (%)', data: k1_values, backgroundColor: k1_colors, borderColor: greenColor, borderWidth: 1 },
+                { label: 'TTR Comply K2 (%)', data: k2_values, backgroundColor: k2_colors, borderColor: greenColor, borderWidth: 1 },
+                { label: 'TTR Comply K3 (%)', data: k3_values, backgroundColor: k3_colors, borderColor: greenColor, borderWidth: 1 },
             ]
         },
         options: commonChartOptions
@@ -96,7 +94,13 @@ document.addEventListener('DOMContentLoaded', function() {
         type: 'bar',
         data: {
             labels: wifiLabels,
-            datasets: [{ label: 'Compliance TTR Wifi (%)', data: wifiValues, backgroundColor: wifiColors }]
+            datasets: [{ 
+                label: 'Compliance TTR Wifi (%)', 
+                data: wifiValues, 
+                backgroundColor: wifiColors,
+                borderColor: greenColor, // Warna legenda diatur ke hijau
+                borderWidth: 1
+            }]
         },
         options: commonChartOptions
     });
@@ -115,8 +119,20 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: hsiLabels,
             datasets: [
-                { label: 'Real 4H (%)', data: hsi4HValues, backgroundColor: hsi4HColors },
-                { label: 'Real 24H (%)', data: hsi24HValues, backgroundColor: hsi24HColors }
+                { 
+                    label: 'Real 4H (%)', 
+                    data: hsi4HValues, 
+                    backgroundColor: hsi4HColors,
+                    borderColor: greenColor, // Warna legenda diatur ke hijau
+                    borderWidth: 1
+                },
+                { 
+                    label: 'Real 24H (%)', 
+                    data: hsi24HValues, 
+                    backgroundColor: hsi24HColors,
+                    borderColor: greenColor, // Warna legenda diatur ke hijau
+                    borderWidth: 1
+                }
             ]
         },
         options: commonChartOptions
